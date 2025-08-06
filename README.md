@@ -2,7 +2,7 @@
 
 Bem-vindo(a) às minhas configurações pessoais para o Ubuntu 24.04 LTS com GNOME. Este repositório contém todos os "dotfiles" e scripts necessários para recriar meu ambiente de trabalho, focado em produtividade e em uma estética suave e coesa baseada no tema Catppuccin.
 
-![Meu Desktop](https-placeholder-para-sua-screenshot.png)
+![Meu Desktop](Screenshots/Captura%20de%20tela%20de%202025-08-05%2023-51-20.png)
 
 ---
 
