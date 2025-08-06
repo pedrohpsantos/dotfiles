@@ -1,0 +1,6 @@
+# Define a fonte para a Nerd Font que instalamos
+font_family FiraCode Nerd Font
+font_size 12.0
+
+# Adiciona uma leve transparência
+background_opacity 0.95
