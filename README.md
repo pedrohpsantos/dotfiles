@@ -25,7 +25,7 @@ Bem-vindo(a) às minhas configurações pessoais para o Ubuntu 24.04 LTS com GNO
 | **Navegação (Terminal)** | `zoxide` + `fzf` |
 | **Gerenciador de Arquivos (TUI)**| [Yazi](https://github.com/sxyazi/yazi) |
 | **Sessões do Terminal** | [tmux](https://github.com/tmux/tmux) (Tema Catppuccin) |
-| **Extensões GNOME**| User Themes, Blur my Shell, Vitals |
+| **Extensões GNOME**| User Themes, Blur my Shell, Vitals, Taskbar |
 
 ---
 
