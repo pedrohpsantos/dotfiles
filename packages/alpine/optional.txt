@@ -1,0 +1,32 @@
+# ==============================================================================
+# packages/alpine/optional.txt — Cloud, Academic, Embedded & External Tools
+# Lines starting with '# [EXTERNAL]' document non-APK tools managed via uv/static releases.
+# ==============================================================================
+opentofu
+ansible
+helm
+iverilog
+verilator
+flex
+bison
+graphviz
+gnuplot
+typst
+pandoc-cli
+protobuf
+mosquitto-clients
+tesseract-ocr
+tesseract-ocr-data-eng
+tesseract-ocr-data-por
+gcc-arm-none-eabi
+newlib-arm-none-eabi
+openocd
+picocom
+rsync
+
+# [EXTERNAL-STATIC] gitleaks  (GitHub Release linux_x64 -> ~/.local/bin/gitleaks)
+# [EXTERNAL-STATIC] trivy     (GitHub Release Linux-64bit -> ~/.local/bin/trivy)
+# [EXTERNAL-STATIC] hadolint  (GitHub Release Linux-x86_64 -> ~/.local/bin/hadolint)
+# [EXTERNAL-UV]     bandit    (uv tool install bandit)
+# [EXTERNAL-UV]     pip-audit (uv tool install pip-audit)
+# [EXTERNAL-UV]     esptool   (uv tool install esptool)

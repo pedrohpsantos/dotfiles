@@ -1,0 +1,11 @@
+"$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
+
+[mgr]
+prepend_keymap = [
+  { on = ["g", "p"], run = "cd ~/Projects", desc = "Go to ~/Projects" },
+  { on = ["g", "c"], run = "cd ~/.config", desc = "Go to ~/.config" },
+  { on = ["g", "d"], run = "cd ~/System-Documentation", desc = "Go to ~/System-Documentation" },
+  { on = ["g", "w"], run = "cd /mnt/c/Users/pedrohpsantos", desc = "Go to Windows Home" },
+  { on = ["<C-g>"],  run = 'shell "lazygit" --block --confirm', desc = "Open LazyGit here" },
+  { on = ["<C-d>"],  run = 'shell "lazydocker" --block --confirm', desc = "Open LazyDocker" },
+]

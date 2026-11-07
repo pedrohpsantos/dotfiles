@@ -1,0 +1,10 @@
+# ==============================================================================
+# packages/alpine/security.txt — DevSecOps & Vulnerability Scanners (APK)
+# Note: gitleaks, trivy and hadolint are not in Alpine 3.23 stable APK repos;
+# they are installed as static binaries in ~/.local/bin and listed in optional.txt.
+# ==============================================================================
+actionlint
+osv-scanner
+shellcheck
+gnupg
+openssh-client

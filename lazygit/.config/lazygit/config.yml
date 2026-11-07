@@ -1,0 +1,58 @@
+# ============================================================================
+# ~/.config/lazygit/config.yml — Catppuccin Mocha + Delta + Neovim 0.11 Integration
+# ============================================================================
+gui:
+  nerdFontsVersion: "3"
+  border: rounded
+  showFileTree: true
+  showRandomTip: false
+  showCommandLog: false
+  mouseEvents: true
+  theme:
+    activeBorderColor:
+      - "#89b4fa"
+      - bold
+    inactiveBorderColor:
+      - "#a6adc8"
+    optionsTextColor:
+      - "#89b4fa"
+    selectedLineBgColor:
+      - "#313244"
+    cherryPickedCommitBgColor:
+      - "#45475a"
+    cherryPickedCommitFgColor:
+      - "#89b4fa"
+    unstagedChangesColor:
+      - "#f38ba8"
+    defaultFgColor:
+      - "#cdd6f4"
+    searchingActiveBorderColor:
+      - "#f9e2af"
+  authorColors:
+    "*": "#b4befe"
+
+git:
+  pagers:
+    - colorArg: always
+      pager: delta --dark --paging=never --line-numbers
+  autoFetch: true
+  autoRefresh: true
+  fetchAll: true
+
+os:
+  editPreset: "nvim"
+  copyToClipboardCmd: "printf '%s' {{text}} | clip.exe"
+
+disableStartupPopups: true
+notARepository: "skip"
+promptToReturnFromSubprocess: false
+
+customCommands:
+  - key: "O"
+    context: "files"
+    command: "code {{.SelectedFile.Name | quote}}"
+    description: "Open selected file in Windows VS Code"
+  - key: "V"
+    context: "commits"
+    command: "gh browse {{.SelectedLocalCommit.Sha}}"
+    description: "Open commit in GitHub browser"

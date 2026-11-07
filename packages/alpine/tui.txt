@@ -1,0 +1,21 @@
+# ==============================================================================
+# packages/alpine/tui.txt — Modern TUI Suite & CLI Navigation
+# Repositories: Alpine Linux v3.23 (main + community)
+# ==============================================================================
+lazygit
+lazydocker
+yazi
+btop
+fastfetch
+fzf
+fd
+ripgrep
+eza
+bat
+delta
+zoxide
+direnv
+less
+tree
+dust
+procs

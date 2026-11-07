@@ -1,0 +1,137 @@
+#!/bin/sh
+# ==============================================================================
+# workbench — Project & Domain Workspace Launcher (fzf + tmux)
+# Usage:
+#   workbench [ai|backend|devops|security|embedded|university|projects|templates]
+#   workbench --list [category]
+#   workbench --help
+# ==============================================================================
+set -eu
+
+PROJECTS_ROOT="${PROJECTS_ROOT:-$HOME/Projects}"
+
+usage() {
+    cat << 'HELP'
+Usage: workbench [CATEGORY] [OPTIONS]
+
+Categories:
+  projects     All projects under ~/Projects (default)
+  ai           AI/ML, RAG, CUDA & Agent projects (~/Projects/ai-ml + AI templates)
+  backend      Backend, API & OCR projects (~/Projects/backend + ~/Projects/work)
+  devops       DevOps, Cloud, IaC & Containers (~/Projects/devops + ~/Projects/scripts)
+  security     AppSec & DevSecOps projects (~/Projects/security)
+  embedded     Embedded Systems, ESP32 & Rasp32 (~/Projects/embedded + ~/Projects/experiments)
+  university   UnB academic coursework & labs (~/Projects/university)
+  templates    Project templates (~/Projects/_templates)
+
+Options:
+  --list, -l   List matching directories without interactive fzf/tmux
+  --help, -h   Show this help message
+HELP
+}
+
+LIST_ONLY=0
+CATEGORY="projects"
+
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        --list|-l)
+            LIST_ONLY=1
+            ;;
+        ai|backend|devops|security|embedded|university|projects|templates)
+            CATEGORY="$arg"
+            ;;
+        *)
+            echo "Unknown argument: $arg" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+collect_dirs() {
+    case "$CATEGORY" in
+        ai)
+            find "$PROJECTS_ROOT/ai-ml" "$PROJECTS_ROOT/_templates" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E 'ai-ml|ai-|ocr-' || true
+            [ -d "$PROJECTS_ROOT/ai-ml" ] && echo "$PROJECTS_ROOT/ai-ml"
+            ;;
+        backend)
+            find "$PROJECTS_ROOT/backend" "$PROJECTS_ROOT/work" "$PROJECTS_ROOT/fullstack" "$PROJECTS_ROOT/_templates" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E 'backend|work|fullstack|fastapi|spring|ocr' || true
+            [ -d "$PROJECTS_ROOT/backend" ] && echo "$PROJECTS_ROOT/backend"
+            ;;
+        devops)
+            find "$PROJECTS_ROOT/devops" "$PROJECTS_ROOT/scripts" "$PROJECTS_ROOT/_templates" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E 'devops|scripts|terraform|cloudflare' || true
+            [ -d "$PROJECTS_ROOT/devops" ] && echo "$PROJECTS_ROOT/devops"
+            ;;
+        security)
+            find "$PROJECTS_ROOT/security" "$PROJECTS_ROOT/_templates" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E 'security|devsecops' || true
+            [ -d "$PROJECTS_ROOT/security" ] && echo "$PROJECTS_ROOT/security"
+            ;;
+        embedded)
+            find "$PROJECTS_ROOT/embedded" "$PROJECTS_ROOT/experiments" "$PROJECTS_ROOT/_templates" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E 'embedded|experiments|rasp32|esp32' || true
+            [ -d "$PROJECTS_ROOT/embedded" ] && echo "$PROJECTS_ROOT/embedded"
+            ;;
+        university)
+            find "$PROJECTS_ROOT/university" -mindepth 1 -maxdepth 2 -type d 2>/dev/null || true
+            [ -d "$PROJECTS_ROOT/university" ] && echo "$PROJECTS_ROOT/university"
+            ;;
+        templates)
+            find "$PROJECTS_ROOT/_templates" -mindepth 1 -maxdepth 1 -type d 2>/dev/null || true
+            ;;
+        projects|*)
+            find "$PROJECTS_ROOT" -mindepth 1 -maxdepth 2 -type d \
+                ! -path '*/.*' ! -path '*/node_modules*' ! -path '*/__pycache__*' ! -path '*/target*' 2>/dev/null || true
+            ;;
+    esac | awk '!seen[$0]++' | sort
+}
+
+DIRS="$(collect_dirs)"
+
+if [ -z "$DIRS" ]; then
+    echo "No directories found for category '$CATEGORY' under $PROJECTS_ROOT" >&2
+    exit 1
+fi
+
+if [ "$LIST_ONLY" -eq 1 ] || [ ! -t 0 ] || [ ! -t 1 ]; then
+    printf "%s\n" "$DIRS"
+    exit 0
+fi
+
+PREVIEW_CMD="ls -la {}"
+if command -v eza >/dev/null 2>&1; then
+    PREVIEW_CMD="eza --tree --level=2 --icons=auto --color=always {}"
+fi
+
+SELECTED="$(printf "%s\n" "$DIRS" | fzf \
+    --prompt="Workbench [$CATEGORY] ❯ " \
+    --height=80% \
+    --layout=reverse \
+    --border=rounded \
+    --preview="$PREVIEW_CMD" \
+    --preview-window=right:55%:wrap)" || exit 0
+
+[ -z "$SELECTED" ] && exit 0
+
+SESSION_NAME="$(basename "$SELECTED" | tr '.: ' '---')"
+[ -z "$SESSION_NAME" ] && SESSION_NAME="workbench"
+
+if ! command -v tmux >/dev/null 2>&1; then
+    cd "$SELECTED" && exec "${SHELL:-/bin/zsh}"
+fi
+
+if ! tmux has-session -t "=$SESSION_NAME" 2>/dev/null; then
+    tmux new-session -d -s "$SESSION_NAME" -c "$SELECTED" -n "code"
+    tmux new-window -t "$SESSION_NAME:2" -c "$SELECTED" -n "run"
+    tmux new-window -t "$SESSION_NAME:3" -c "$SELECTED" -n "ops"
+    tmux select-window -t "$SESSION_NAME:1"
+fi
+
+if [ -n "${TMUX:-}" ]; then
+    exec tmux switch-client -t "$SESSION_NAME"
+else
+    exec tmux attach-session -t "$SESSION_NAME"
+fi

@@ -1,0 +1,95 @@
+#!/bin/sh
+# ============================================================
+# alpine-maint — Idempotent Maintenance & Health Audit Utility
+# Complements /root/alpine-wsl-setup.sh without duplicating it.
+# Runs read-only checks without root; suggests privileged commands.
+# ============================================================
+set -eu
+
+MODE="${1:-status}"
+
+hr() { printf '%s\n' "============================================================"; }
+sec() { printf '\n\033[1;36m>>> %s\033[0m\n' "$1"; }
+
+run_status() {
+    hr
+    printf " ALPINE WSL 2 — SYSTEM HEALTH & MAINTENANCE AUDIT (%s)\n" "$(date '+%Y-%m-%d %H:%M:%S')"
+    hr
+
+    sec "1. Sistema, Kernel & Armazenamento"
+    printf "Alpine Release : %s\n" "$(cat /etc/alpine-release)"
+    printf "Kernel         : %s\n" "$(uname -r)"
+    printf "Usuario        : %s\n" "$(id)"
+    df -h / /mnt/c
+
+    sec "2. Pacotes APK & Atualizacoes Disponiveis (Simulacao)"
+    printf "Explicitos (/etc/apk/world) : %s\n" "$(wc -l < /etc/apk/world)"
+    printf "Total instalados (apk info) : %s\n" "$(apk info -v | wc -l)"
+    printf "Simulacao de upgrade        :\n"
+    apk upgrade --simulate 2>/dev/null | sed 's/^/  /' || printf "  (Execute 'doas apk update' para atualizar indices)\n"
+
+    sec "3. Servicos OpenRC & Porta 6379 (Redis)"
+    if ss -H -lnt 2>/dev/null | awk '$4 ~ /:6379$/ { found=1 } END { exit !found }'; then
+        printf "  [INFO] Porta 6379 em escuta (Redis ativo)\n"
+    else
+        printf "  [OK]   Porta 6379 livre (Redis parado; pacotes preservados)\n"
+    fi
+    if pgrep -x crond >/dev/null 2>&1; then
+        printf "  [OK]   crond em execucao (PID %s)\n" "$(pgrep -x crond | tr '\n' ' ')"
+    else
+        printf "  [WARN] crond nao encontrado em execucao\n"
+    fi
+
+    sec "4. Toolchains & Language Servers"
+    for cmd in gcc clang clangd python3 uv ruff node npm go gopls dlv rustc cargo rust-analyzer java mvn nvim tmux zsh starship git gh docker kubectl; do
+        p="$(command -v "$cmd" 2>/dev/null || true)"
+        if [ -n "$p" ]; then
+            printf "  [OK]      %-16s -> %s\n" "$cmd" "$p"
+        else
+            printf "  [MISSING] %-16s\n" "$cmd"
+        fi
+    done
+
+    sec "5. Docker Desktop WSL Integration"
+    if [ -S /var/run/docker.sock ]; then
+        printf "  [OK] Socket /var/run/docker.sock presente\n"
+        docker info --format "  [OK] Engine: {{.ServerVersion}} | OS: {{.OperatingSystem}} | Containers: {{.ContainersRunning}} running" 2>/dev/null || printf "  [WARN] Falha ao consultar daemon Docker\n"
+    else
+        printf "  [WARN] /var/run/docker.sock ausente (Docker Desktop parado no Windows)\n"
+    fi
+
+    sec "6. Caches & Ocupacao em Disco"
+    for cdir in /var/cache/apk "$HOME/.cache" "$HOME/.local/share" /tmp; do
+        if [ -d "$cdir" ]; then
+            du -sh "$cdir" 2>/dev/null | sed 's/^/  /'
+        fi
+    done
+
+    sec "7. Integridade do Repositorio ~/.dotfiles"
+    if [ -d "$HOME/.dotfiles" ]; then
+        git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" status -sb | sed 's/^/  /'
+    else
+        printf "  [WARN] ~/.dotfiles nao encontrado\n"
+    fi
+
+    sec "8. Backups Integrais WSL no Windows"
+    if [ -d "/mnt/c/Users/pedrohpsantos/Backups/WSL" ]; then
+        find "/mnt/c/Users/pedrohpsantos/Backups/WSL" -mindepth 1 -maxdepth 1 -exec ls -lh {} + 2>/dev/null | sed 's/^/  /'
+    else
+        printf "  [INFO] Diretorio C:\\Users\\pedrohpsantos\\Backups\\WSL nao encontrado\n"
+    fi
+}
+
+case "$MODE" in
+    status|audit)
+        run_status
+        ;;
+    update-cmd)
+        printf "Para atualizar os pacotes do sistema com autenticacao interativa local, execute:\n"
+        printf "  doas id && doas apk update && doas apk upgrade --available\n"
+        ;;
+    *)
+        printf "Uso: alpine-maint [status|audit|update-cmd]\n"
+        exit 1
+        ;;
+esac

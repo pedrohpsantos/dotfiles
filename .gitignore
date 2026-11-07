@@ -1,0 +1,71 @@
+# ==============================================================================
+# .gitignore — Protection & Governance for Alpine WSL 2 GNU Stow Dotfiles
+# ==============================================================================
+
+# --- Zsh Compiled Bytecode & Completion Dumps ---
+*.zwc
+*.zwc.old
+.zcompdump*
+
+# --- Neovim Runtime State (Note: lazy-lock.json is intentionally tracked) ---
+*.log
+.netrwhist
+undo/
+swap/
+shada/
+!nvim/.config/nvim/lazy-lock.json
+
+# --- Shell History & Runtime Caches ---
+.cache/
+.local/share/
+.local/state/
+.history
+.zsh_history
+.ash_history
+.bash_history
+
+# --- Secrets, Keys & Credentials (Strict Blocklist) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+.ssh/
+.gnupg/
+**/hosts.yml
+**/credentials*
+**/*token*
+**/*secret*
+
+# --- Backups & Temporary Files ---
+*.bak
+*.backup
+*.old
+*.tmp
+*~
+.dotfiles_backup_*
+
+# --- Windows & Cross-OS Artifacts ---
+Thumbs.db
+Desktop.ini
+desktop.ini
+.DS_Store
+*.exe
+*.dll
+*.msi
+*.sys
+
+# --- Accidental ELF/Static Binaries in local-bin ---
+local-bin/.local/bin/gitleaks
+local-bin/.local/bin/trivy
+local-bin/.local/bin/hadolint
+local-bin/.local/bin/duf
+local-bin/.local/bin/glow
+local-bin/.local/bin/tldr
+local-bin/.local/bin/bandit*
+local-bin/.local/bin/esp*
+local-bin/.local/bin/pip-audit
+local-bin/.local/bin/kubectl

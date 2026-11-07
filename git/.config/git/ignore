@@ -1,0 +1,23 @@
+# ============================================================
+# ~/.config/git/ignore — Global Git Ignore
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.env
+.env.*
+!.env.example
+.direnv/
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.idea/
+.vscode/
+!*.code-workspace

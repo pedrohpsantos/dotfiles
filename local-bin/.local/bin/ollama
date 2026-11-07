@@ -1,0 +1,8 @@
+#!/bin/sh
+OLLAMA_WIN="/mnt/c/Users/pedrohpsantos/AppData/Local/Programs/Ollama/ollama.exe"
+if [ -x "$OLLAMA_WIN" ]; then
+    "$OLLAMA_WIN" "$@" | tr -d '\r'
+else
+    echo "ollama.exe not found at $OLLAMA_WIN" >&2
+    exit 1
+fi

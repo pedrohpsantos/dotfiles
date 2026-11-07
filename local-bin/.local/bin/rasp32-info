@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+exec ssh -o BatchMode=yes -o ConnectTimeout=8 "${1:-rasp32}" '
+    echo "=== OS & KERNEL ==="
+    uname -a
+    cat /etc/os-release 2>/dev/null || true
+    echo "=== HARDWARE MODEL ==="
+    if [ -r /proc/device-tree/model ]; then tr -d "\000" < /proc/device-tree/model; printf "\n"; fi
+    lscpu 2>/dev/null || true
+    echo "=== MEMORY & STORAGE ==="
+    free -h
+    df -h /
+    lsblk 2>/dev/null || true
+    echo "=== GPIO TOOLS ==="
+    for g in gpiodetect gpioinfo gpiofind gpioget gpioset raspi-gpio pinctrl; do
+        printf "%-12s : %s\n" "$g" "$(command -v "$g" 2>/dev/null || echo AUSENTE)"
+    done
+'
