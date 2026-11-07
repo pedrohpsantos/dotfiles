@@ -144,16 +144,34 @@ stow --restow --no-folding --target="$HOME" nvim
 
 ## 8. Restauração de Backups
 
-O script `install.sh` cria automaticamente um diretório `~/.dotfiles_backup_YYYYMMDD_HHMMSS` sempre que encontra arquivos reais antes de aplicar os symlinks do Stow:
+O script `install.sh` cria automaticamente um snapshot `~/.dotfiles_backup_YYYYMMDD_HHMMSS` sempre que encontra arquivos reais antes de aplicar os symlinks do Stow.
+
+Para restaurar os arquivos originais com verificação prévia de integridade, falha segura e sem sobrescrever a árvore Git:
 
 ```sh
-cd ~/dotfiles
-# 1. Inspecione diferenças antes de reverter para evitar sobrescrever edições recentes
-BACKUP_DIR="$(find "$HOME" -maxdepth 1 -type d -name '.dotfiles_backup_*' | sort | tail -n 1)"
-diff -ru "$BACKUP_DIR" "$HOME" 2>/dev/null || true
+# 1. Localizar o backup mais recente no $HOME
+BACKUP_DIR="$(find "$HOME" -maxdepth 1 -type d -name '.dotfiles_backup_*' 2>/dev/null | sort | tail -n 1)"
 
-# 2. Remova os links simbólicos do Stow ANTES de restaurar os arquivos
+# 2. Validações de segurança
+if [ -z "${BACKUP_DIR:-}" ] || [ ! -d "$BACKUP_DIR" ] || [ -L "$BACKUP_DIR" ]; then
+    printf "ERRO: Backup valido nao encontrado em %s\n" "$HOME" >&2
+    return 1 2>/dev/null || exit 1
+fi
+
+# 3. Inspecionar diferencas estritamente nos arquivos do snapshot
+(
+    cd "$BACKUP_DIR"
+    find . \( -type f -o -type l \) | while IFS= read -r _rel; do
+        _target="$HOME/${_rel#./}"
+        [ -e "$_target" ] || [ -L "$_target" ] && diff -u "$_target" "$_rel" 2>/dev/null || true
+    done
+)
+
+# 4. Remover links do Stow ANTES de restaurar (evita sobrescrever o repositorio)
+cd "$HOME/dotfiles"
 stow --delete --target="$HOME" zsh starship tmux nvim lazygit lazydocker yazi btop fastfetch git local-bin
+
+# 5. Restaurar os arquivos preservando atributos
 cp -a "$BACKUP_DIR"/. "$HOME"/
 ```
 

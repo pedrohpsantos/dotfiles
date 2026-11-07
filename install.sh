@@ -349,7 +349,17 @@ apply_stow_packages() {
     done
 
     if [ "$DRY_RUN" -eq 1 ]; then
-        log_dry "cd \"$REPO_DIR\" && stow --simulate --restow --no-folding --target=\"$TARGET_HOME\"$_valid_pkgs"
+        if ! command -v stow >/dev/null 2>&1; then
+            log_warn "GNU Stow is not installed; cannot simulate package linking."
+            return 0
+        fi
+        log_info "Simulating GNU Stow package application (read-only conflict check)..."
+        (
+            cd "$REPO_DIR"
+            # shellcheck disable=SC2086
+            stow --simulate --restow --no-folding --target="$TARGET_HOME" $_valid_pkgs
+        )
+        log_ok "GNU Stow dry-run simulation completed without conflicts:$_valid_pkgs"
         return 0
     fi
 
@@ -411,7 +421,7 @@ verify_wsl_system_conf() {
 # ------------------------------------------------------------------------------
 ensure_permissions() {
     log_step "6. Verifying Executable Permissions in ~/.local/bin"
-    for _script in devdoctor workbench wb alpine-maint nvidia-smi docker ollama rasp32-check rasp32-sync rasp32-info; do
+    for _script in devdoctor workbench wb alpine-maint nvidia-smi docker ollama agy rasp32-check rasp32-sync rasp32-info; do
         _spath="$REPO_DIR/local-bin/.local/bin/$_script"
         if [ -f "$_spath" ]; then
             if [ ! -x "$_spath" ]; then
@@ -524,7 +534,15 @@ run_devdoctor() {
         return 0
     fi
     if [ "$DRY_RUN" -eq 1 ]; then
-        log_dry "$TARGET_HOME/.local/bin/devdoctor"
+        if [ -x "$TARGET_HOME/.local/bin/devdoctor" ]; then
+            log_info "Running read-only health diagnostics (devdoctor)..."
+            "$TARGET_HOME/.local/bin/devdoctor"
+        elif [ -x "$REPO_DIR/local-bin/.local/bin/devdoctor" ]; then
+            log_info "Running read-only health diagnostics from repo (devdoctor)..."
+            "$REPO_DIR/local-bin/.local/bin/devdoctor"
+        else
+            log_dry "devdoctor not available to run read-only diagnostics."
+        fi
         return 0
     fi
     if [ -x "$TARGET_HOME/.local/bin/devdoctor" ]; then

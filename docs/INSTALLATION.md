@@ -135,25 +135,61 @@ cd ~/dotfiles
 stow --delete --target="$HOME" nvim
 ```
 
-### 7.2. Restaurar um Backup Automático (`~/.dotfiles_backup_YYYYMMDD_HHMMSS`)
+### 7.2. Procedimento de Recuperação Segura a partir de Backup (`~/.dotfiles_backup_*`)
 Sempre que o `install.sh` encontra um arquivo real no `$HOME` antes de criar um symlink, ele copia o arquivo preservando permissões e timestamps (`cp -a`) para `~/.dotfiles_backup_YYYYMMDD_HHMMSS/`.
 
-Para restaurar os arquivos originais a partir de um backup com segurança:
-
-> **Atenção:** Sempre remova os links simbólicos do GNU Stow **antes** de copiar o backup de volta (caso contrário, `cp` através de um symlink ativo sobrescreveria o arquivo dentro do repositório `~/dotfiles`). Além disso, compare se você fez edições mais recentes no repositório antes de restaurar um backup antigo.
+Para restaurar os arquivos originais com verificação rigorosa de integridade, falha segura e sem sobrescrever a árvore do repositório:
 
 ```sh
-cd ~/dotfiles
+# 1. Localizar o backup mais recente no $HOME
+BACKUP_DIR="$(find "$HOME" -maxdepth 1 -type d -name '.dotfiles_backup_*' 2>/dev/null | sort | tail -n 1)"
 
-# 1. Selecionar o diretório de backup desejado e comparar diferenças antes de restaurar
-BACKUP_DIR="$(find "$HOME" -maxdepth 1 -type d -name '.dotfiles_backup_*' | sort | tail -n 1)"
-printf "Backup selecionado: %s\n" "$BACKUP_DIR"
-diff -ru "$BACKUP_DIR" "$HOME" 2>/dev/null || true
+# 2. Validações rigorosas de segurança antes de qualquer ação
+if [ -z "${BACKUP_DIR:-}" ]; then
+    printf "ERRO: Nenhum diretorio de backup encontrado em %s\n" "$HOME" >&2
+    return 1 2>/dev/null || exit 1
+fi
 
-# 2. Remover os symlinks gerados pelo Stow ANTES de copiar os arquivos originais
+case "$BACKUP_DIR" in
+    "$HOME"/.dotfiles_backup_*) ;;
+    *)
+        printf "ERRO: Caminho de backup invalido ou fora do padrao: %s\n" "$BACKUP_DIR" >&2
+        return 1 2>/dev/null || exit 1
+        ;;
+esac
+
+if [ -L "$BACKUP_DIR" ]; then
+    printf "ERRO: O backup selecionado e um link simbolico; abortando: %s\n" "$BACKUP_DIR" >&2
+    return 1 2>/dev/null || exit 1
+fi
+
+if [ ! -d "$BACKUP_DIR" ]; then
+    printf "ERRO: Diretorio de backup nao existe ou inacessivel: %s\n" "$BACKUP_DIR" >&2
+    return 1 2>/dev/null || exit 1
+fi
+
+printf "Backup validado: %s\n" "$BACKUP_DIR"
+
+# 3. Comparar estritamente os arquivos relevantes contidos no snapshot (evita varrer todo o $HOME)
+printf "--- Diferencas entre o snapshot e o estado atual em \$HOME ---\n"
+(
+    cd "$BACKUP_DIR"
+    find . \( -type f -o -type l \) | while IFS= read -r _rel; do
+        _target="$HOME/${_rel#./}"
+        if [ -e "$_target" ] || [ -L "$_target" ]; then
+            diff -u "$_target" "$_rel" 2>/dev/null || true
+        else
+            printf "Item novo/ausente em \$HOME: %s\n" "${_rel#./}"
+        fi
+    done
+)
+
+# 4. Remover os links simbolicos do GNU Stow ANTES de restaurar (evita sobrescrever o repositorio)
+cd "$HOME/dotfiles"
 stow --delete --target="$HOME" \
-  zsh starship tmux nvim lazygit lazydocker yazi btop fastfetch git local-bin
+    zsh starship tmux nvim lazygit lazydocker yazi btop fastfetch git local-bin
 
-# 3. Restaurar os arquivos originais preservando permissões e timestamps
+# 5. Restaurar os arquivos originais preservando atributos
 cp -a "$BACKUP_DIR"/. "$HOME"/
+printf "Restauracao concluida com sucesso a partir de %s\n" "$BACKUP_DIR"
 ```

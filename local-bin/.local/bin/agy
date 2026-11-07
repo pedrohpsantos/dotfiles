@@ -1,0 +1,14 @@
+#!/bin/sh
+# ==============================================================================
+# agy — Antigravity CLI Windows Interoperability Wrapper for WSL 2
+# ==============================================================================
+set -eu
+
+AGY_WIN="/mnt/c/Users/pedrohpsantos/AppData/Local/agy/bin/agy.exe"
+
+if [ -x "$AGY_WIN" ]; then
+    exec "$AGY_WIN" "$@"
+fi
+
+echo "agy.exe not found at $AGY_WIN" >&2
+exit 1
