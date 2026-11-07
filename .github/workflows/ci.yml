@@ -1,0 +1,64 @@
+name: CI & Dotfiles Governance
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-validate:
+    name: Lint, Syntax & Secret Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Linters & Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck zsh stow
+
+      - name: Validate POSIX Shell Syntax (sh -n)
+        run: |
+          echo "==> Verifying install.sh syntax"
+          sh -n install.sh
+          echo "==> Verifying ~/.local/bin scripts syntax"
+          find local-bin/.local/bin -type f -exec sh -n {} +
+
+      - name: Run ShellCheck on Bootstrap & Scripts
+        run: |
+          echo "==> Running shellcheck on install.sh"
+          shellcheck install.sh
+          echo "==> Running shellcheck on local-bin"
+          shellcheck -S style local-bin/.local/bin/*
+
+      - name: Validate Zsh Configurations (zsh -n)
+        run: |
+          echo "==> Running zsh -n on Zsh configs"
+          zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.zlogin zsh/.config/zsh/aliases.zsh
+
+      - name: Verify Git Whitespace & Trailing Errors
+        run: |
+          git diff --check HEAD~1 HEAD 2>/dev/null || git diff --check
+
+      - name: Secret Scanning (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+      - name: Simulate GNU Stow Application
+        run: |
+          echo "==> Simulating Stow packages to temporary target"
+          mkdir -p /tmp/fake-home
+          stow --simulate --restow --no-folding --target=/tmp/fake-home \
+            zsh starship tmux nvim lazygit lazydocker yazi btop fastfetch git local-bin
+          echo "==> Stow simulation succeeded without conflicts"

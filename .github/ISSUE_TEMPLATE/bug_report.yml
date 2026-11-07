@@ -1,0 +1,32 @@
+name: Bug Report
+description: Report a broken configuration, script error, or bootstrap issue.
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar o problema! Por favor, preencha as informações abaixo para facilitar o diagnóstico no Alpine WSL 2.
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Versão do Alpine Linux e kernel do WSL 2 (`cat /etc/alpine-release && uname -r`).
+      placeholder: "Alpine 3.23.8 / 6.18.33.2-microsoft-standard-WSL2"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Problema
+      description: Explique detalhadamente o que aconteceu e o que deveria ter acontecido.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs e Mensagens de Erro
+      description: Saída de erro de terminal (`install.sh`, `devdoctor`, `alpine-maint` ou ferramenta afetada).
+      render: shell
+    validations:
+      required: false
