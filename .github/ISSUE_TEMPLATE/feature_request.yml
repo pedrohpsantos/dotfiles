@@ -1,0 +1,23 @@
+name: Feature Request
+description: Propose a new Stow module, CLI integration, or workflow improvement.
+title: "[FEAT]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proponha novas melhorias, módulos ou integrações mantendo os princípios de leveza e compatibilidade musl.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta
+      description: Qual ferramenta, configuração ou melhoria você gostaria de adicionar?
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivação e Benefícios
+      description: Por que essa adição é relevante para o ecossistema de desenvolvimento?
+    validations:
+      required: false
