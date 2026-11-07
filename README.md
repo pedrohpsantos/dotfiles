@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/alpinelinux/alpine-artwork/master/distro/logo.svg" height="70" alt="Alpine Linux Official Logo" />
+<img src="./docs/assets/alpine-logo.svg" height="70" alt="Alpine Linux Official Logo" />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/logos/exports/154x154_circle.png" height="70" alt="Catppuccin Mocha Logo" />
+<img src="./docs/assets/catppuccin-logo.png" height="70" alt="Catppuccin Mocha Logo" />
 
 # Alpine WSL Dotfiles
 
