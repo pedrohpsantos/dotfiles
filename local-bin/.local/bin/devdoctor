@@ -1,6 +1,8 @@
 #!/bin/sh
 # ==============================================================================
-# ~/.local/bin/devdoctor — Pedro's Developer Workstation 2026 Diagnostic Suite
+# ~/.local/bin/devdoctor — Workstation Diagnostic & Toolchain Presence Audit
+# Note: Validates tool presence and basic configuration; does not perform
+# end-to-end integration execution testing of containerized workloads.
 # ==============================================================================
 set -eu
 
@@ -18,6 +20,7 @@ C_MUTED="${ESC}[38;2;166;173;200m"
 
 PASS_COUNT=0
 WARN_COUNT=0
+SKIP_COUNT=0
 FAIL_COUNT=0
 
 row() {
@@ -33,16 +36,13 @@ row() {
             _color="$C_YELLOW"
             WARN_COUNT=$((WARN_COUNT + 1))
             ;;
+        SKIP)
+            _color="$C_MUTED"
+            SKIP_COUNT=$((SKIP_COUNT + 1))
+            ;;
         FAIL)
             _color="$C_RED"
             FAIL_COUNT=$((FAIL_COUNT + 1))
-            ;;
-        "NOT INSTALLED")
-            _color="$C_YELLOW"
-            WARN_COUNT=$((WARN_COUNT + 1))
-            ;;
-        "NOT APPLICABLE")
-            _color="$C_MUTED"
             ;;
         *)
             _color="$C_RESET"
@@ -52,148 +52,231 @@ row() {
 }
 
 printf "\n%s%s╭──────────────────────────────────────────────────────────────────────────────╮%s\n" "$C_BOLD" "$C_MAUVE" "$C_RESET"
-printf "%s%s│        PEDRO'S DEVELOPER WORKSTATION 2026 — DEVDOCTOR HEALTH DASHBOARD       │%s\n" "$C_BOLD" "$C_MAUVE" "$C_RESET"
+printf "%s%s│       PEDRO'S DEVELOPER WORKSTATION — DEVDOCTOR STATUS & CONFIG AUDIT        │%s\n" "$C_BOLD" "$C_MAUVE" "$C_RESET"
 printf "%s%s╰──────────────────────────────────────────────────────────────────────────────╯%s\n\n" "$C_BOLD" "$C_MAUVE" "$C_RESET"
 
-# 1. OS
-ALPINE_VER="$(cat /etc/alpine-release 2>/dev/null || echo unknown)"
-KERNEL_VER="$(uname -r)"
-DISK_INFO="$(df -h / | awk 'NR==2 {printf "%s used / %s avail (%s)", $3, $4, $5}')"
-row "OS" "PASS" "Alpine $ALPINE_VER (musl x86_64) | Kernel $KERNEL_VER | Disk: $DISK_INFO"
-
-# 2. Shell & Terminal UX
-ZSH_VER="$(zsh --version | awk '{print $1, $2}')"
-STARSHIP_VER="$(starship --version | head -n 1 | awk '{print $2}')"
-TMUX_VER="$(tmux -V)"
-row "Shell" "PASS" "$ZSH_VER | starship $STARSHIP_VER | $TMUX_VER | workbench ready"
-
-# 3. Editor & Native LSPs
-NVIM_VER="$(nvim --version | head -n 1 | awk '{print $2}')"
-LSP_OK=1
-for lsp in clangd gopls rust-analyzer ruff lua-language-server taplo stylua shfmt; do
-    command -v "$lsp" >/dev/null 2>&1 || LSP_OK=0
-done
-if [ "$LSP_OK" -eq 1 ]; then
-    row "Editor" "PASS" "Neovim $NVIM_VER (LazyVim Hybrid + Tree-sitter) | LSPs: clangd, gopls, rust-analyzer, ruff, lua_ls, taplo"
+# 1. OS & Kernel
+if [ -f /etc/alpine-release ]; then
+    ALPINE_VER="$(cat /etc/alpine-release)"
+    KERNEL_VER="$(uname -r)"
+    DISK_INFO="$(df -h / | awk 'NR==2 {printf "%s used / %s avail (%s)", $3, $4, $5}')"
+    row "OS & Kernel" "PASS" "Alpine $ALPINE_VER (musl x86_64) | Kernel $KERNEL_VER | Disk: $DISK_INFO"
 else
-    row "Editor" "WARN" "Neovim $NVIM_VER | One or more LSP/formatter binaries missing"
+    row "OS & Kernel" "FAIL" "Alpine Linux release file not detected"
 fi
 
-# 4. GPU & CUDA Subsystem (4 distinct checks as required)
+# 2. Shell & Terminal
+if command -v zsh >/dev/null 2>&1 && command -v starship >/dev/null 2>&1 && command -v tmux >/dev/null 2>&1; then
+    ZSH_VER="$(zsh --version | awk '{print $1, $2}')"
+    STARSHIP_VER="$(starship --version | head -n 1 | awk '{print $2}')"
+    TMUX_VER="$(tmux -V)"
+    row "Shell & UX" "PASS" "$ZSH_VER | starship $STARSHIP_VER | $TMUX_VER"
+else
+    row "Shell & UX" "WARN" "One or more core shell tools missing (zsh, starship, tmux)"
+fi
+
+# 3. Editor & LSPs / Formatters
+LSP_MISSING=""
+for lsp in nvim clangd gopls rust-analyzer lua-language-server taplo ruff stylua shfmt; do
+    if ! command -v "$lsp" >/dev/null 2>&1; then
+        LSP_MISSING="$LSP_MISSING $lsp"
+    fi
+done
+if [ -z "$LSP_MISSING" ]; then
+    NVIM_VER="$(nvim --version | head -n 1 | awk '{print $2}')"
+    row "Editor & LSPs" "PASS" "Neovim $NVIM_VER | LSPs: clangd, gopls, rust-analyzer, lua_ls, taplo | Format: ruff, stylua, shfmt"
+else
+    row "Editor & LSPs" "WARN" "Missing tools:$LSP_MISSING"
+fi
+
+# 4. GPU & CUDA Subsystem (Separated detection vs functional validation)
 if [ -e /dev/dxg ] && command -v nvidia-smi >/dev/null 2>&1; then
-    GPU_SUMMARY="$(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null | head -n 1 || echo "NVIDIA GPU")"
+    GPU_SUMMARY="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null | head -n 1 || echo "NVIDIA GPU")"
     row "GPU Detected" "PASS" "$GPU_SUMMARY (/dev/dxg present)"
 else
-    row "GPU Detected" "FAIL" "/dev/dxg or nvidia-smi missing"
+    row "GPU Detected" "WARN" "/dev/dxg device or nvidia-smi command unavailable"
 fi
 
-if [ -r /usr/lib/wsl/lib/libcuda.so.1 ] && command -v docker >/dev/null 2>&1; then
-    row "Docker GPU" "PASS" "WSL2 DirectX/CUDA passthrough (/dev/dxg + /usr/lib/wsl) active"
-    row "CUDA Runtime" "PASS" "CUDA Driver 13.5 (libcuda.so.1 + nvcr.io/nvidia/k8s/cuda-sample:nbody verified)"
-    row "PyTorch CUDA" "PASS" "Containerized glibc CUDA workflow (~/Projects/_templates/ai-gpu-cuda)"
+if [ -r /usr/lib/wsl/lib/libcuda.so.1 ]; then
+    row "CUDA Driver Lib" "PASS" "/usr/lib/wsl/lib/libcuda.so.1 present (WSL driver interface)"
 else
-    row "Docker GPU" "WARN" "Docker or /usr/lib/wsl/lib/libcuda.so.1 unavailable"
+    row "CUDA Driver Lib" "WARN" "/usr/lib/wsl/lib/libcuda.so.1 not accessible"
 fi
+
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    D_VER="$(docker --version | awk '{print $3}' | tr -d ',')"
+    DC_VER="$(docker compose version --short 2>/dev/null || echo n/a)"
+    row "Docker Engine" "PASS" "Docker Engine $D_VER | Compose v$DC_VER (daemon responding)"
+else
+    row "Docker Engine" "WARN" "Docker daemon not responding (start Docker Desktop on Windows)"
+fi
+
+if [ -x "$HOME/.local/bin/docker" ] && [ -e /dev/dxg ]; then
+    row "Docker GPU Hook" "PASS" "Wrapper ~/.local/bin/docker configured to inject /dev/dxg and /usr/lib/wsl on --gpus"
+else
+    row "Docker GPU Hook" "WARN" "Wrapper or /dev/dxg unavailable"
+fi
+
+# Functional container execution is marked SKIP as devdoctor does not pull/run heavy container workloads
+row "CUDA Container" "SKIP" "End-to-end container test not run (requires pulling CUDA image; see docs/ARCHITECTURE.md)"
+row "PyTorch CUDA" "SKIP" "Requires containerized glibc workload (~/Projects/_templates/ai-gpu-cuda)"
 
 # 5. Local LLM (Ollama)
 if command -v ollama >/dev/null 2>&1; then
     OLLAMA_VER="$(ollama --version 2>/dev/null | tail -n 1 | awk '{print $NF}' || echo installed)"
-    row "AI / Ollama" "PASS" "Windows Host Ollama ($OLLAMA_VER) integrated | Model: qwen3.5:4b"
+    if ollama list >/dev/null 2>&1; then
+        row "AI / Ollama" "PASS" "Windows Host Ollama ($OLLAMA_VER) reachable | Model: qwen3.5:4b"
+    else
+        row "AI / Ollama" "WARN" "Ollama CLI linked ($OLLAMA_VER), but host daemon is not responding"
+    fi
 else
-    row "AI / Ollama" "NOT INSTALLED" "Ollama binary not linked"
+    row "AI / Ollama" "SKIP" "Ollama binary wrapper not installed"
 fi
 
-# 6. Docker
-if docker info >/dev/null 2>&1; then
-    D_VER="$(docker --version | awk '{print $3}' | tr -d ',')"
-    DC_VER="$(docker compose version --short 2>/dev/null || echo n/a)"
-    BX_VER="$(docker buildx version 2>/dev/null | awk '{print $2}' || echo n/a)"
-    row "Docker" "PASS" "Engine $D_VER | Compose v$DC_VER | Buildx $BX_VER"
+# 6. Python Toolchain & OCR
+PY_MISSING=""
+for p in python3 uv ruff tesseract; do
+    if ! command -v "$p" >/dev/null 2>&1; then
+        PY_MISSING="$PY_MISSING $p"
+    fi
+done
+if [ -z "$PY_MISSING" ]; then
+    PY_VER="$(python3 --version | awk '{print $2}')"
+    UV_VER="$(uv --version | awk '{print $2}')"
+    RUFF_VER="$(ruff --version | awk '{print $2}')"
+    row "Python & OCR" "PASS" "Python $PY_VER | uv $UV_VER | ruff $RUFF_VER | Tesseract OCR"
 else
-    row "Docker" "WARN" "Docker daemon not responding"
+    row "Python & OCR" "WARN" "Missing tools:$PY_MISSING"
 fi
 
-# 7. Python & OCR
-PY_VER="$(python3 --version | awk '{print $2}')"
-UV_VER="$(uv --version | awk '{print $2}')"
-RUFF_VER="$(ruff --version | awk '{print $2}')"
-TESS_VER="$(tesseract --version 2>&1 | head -n 1 | awk '{print $2}')"
-row "Python & OCR" "PASS" "Python $PY_VER | uv $UV_VER | ruff $RUFF_VER | Tesseract $TESS_VER (por+eng)"
-
-# 8. Node / Frontend
-NODE_VER="$(node -v)"
-NPM_VER="$(npm -v)"
-PNPM_VER="$(pnpm -v)"
-row "Node" "PASS" "Node $NODE_VER | npm $NPM_VER | pnpm $PNPM_VER"
-
-# 9. Go
-GO_VER="$(go version | awk '{print $3}')"
-GOPLS_VER="$(gopls version | head -n 1 | awk '{print $2}')"
-DLV_VER="$(dlv version 2>/dev/null | awk 'NR==2 {print $2}' || echo installed)"
-row "Go" "PASS" "$GO_VER | gopls $GOPLS_VER | dlv $DLV_VER"
-
-# 10. Rust
-RUST_VER="$(rustc --version | awk '{print $2}')"
-CARGO_VER="$(cargo --version | awk '{print $2}')"
-RA_VER="$(rust-analyzer --version | awk '{print $2}')"
-row "Rust" "PASS" "rustc $RUST_VER | cargo $CARGO_VER | clippy | rust-analyzer $RA_VER"
-
-# 11. Java
-JAVA_VER="$(java -version 2>&1 | head -n 1 | awk -F '\"' '{print $2}')"
-MVN_VER="$(mvn -version | head -n 1 | awk '{print $3}')"
-row "Java" "PASS" "OpenJDK $JAVA_VER | Maven $MVN_VER"
-
-# 12. Cloud & IaC
-TOFU_VER="$(tofu --version | head -n 1 | awk '{print $2}')"
-ANSIBLE_VER="$(ansible --version | head -n 1 | awk '{print $3}' | tr -d ']')"
-HELM_VER="$(helm version --short | cut -d+ -f1)"
-KUBECTL_VER="$(kubectl version --client -o yaml 2>/dev/null | awk '/gitVersion:/ {print $2}' || echo installed)"
-row "Cloud & IaC" "PASS" "OpenTofu $TOFU_VER | Ansible $ANSIBLE_VER | Helm $HELM_VER | kubectl $KUBECTL_VER"
-
-# 13. Git & GitHub
-GIT_VER="$(git --version | awk '{print $3}')"
-if gh auth status >/dev/null 2>&1; then
-    GH_STATUS="gh authenticated"
+# 7. Node / Frontend
+NODE_MISSING=""
+for n in node npm pnpm; do
+    if ! command -v "$n" >/dev/null 2>&1; then
+        NODE_MISSING="$NODE_MISSING $n"
+    fi
+done
+if [ -z "$NODE_MISSING" ]; then
+    NODE_VER="$(node -v)"
+    PNPM_VER="$(pnpm -v)"
+    row "Node.js" "PASS" "Node $NODE_VER | pnpm $PNPM_VER"
 else
-    GH_STATUS="gh unauthenticated"
+    row "Node.js" "WARN" "Missing tools:$NODE_MISSING"
 fi
-row "Git & TUIs" "PASS" "git $GIT_VER | $GH_STATUS | delta | lazygit | lazydocker | yazi | btop"
 
-# 14. Security / DevSecOps
-SEC_OK=1
+# 8. Go Toolchain
+GO_MISSING=""
+for g in go gopls dlv; do
+    if ! command -v "$g" >/dev/null 2>&1; then
+        GO_MISSING="$GO_MISSING $g"
+    fi
+done
+if [ -z "$GO_MISSING" ]; then
+    GO_VER="$(go version | awk '{print $3}')"
+    GOPLS_VER="$(gopls version | head -n 1 | awk '{print $2}')"
+    row "Go" "PASS" "$GO_VER | gopls $GOPLS_VER | delve"
+else
+    row "Go" "WARN" "Missing tools:$GO_MISSING"
+fi
+
+# 9. Rust Toolchain
+RUST_MISSING=""
+for r in rustc cargo rust-analyzer; do
+    if ! command -v "$r" >/dev/null 2>&1; then
+        RUST_MISSING="$RUST_MISSING $r"
+    fi
+done
+if [ -z "$RUST_MISSING" ]; then
+    RUST_VER="$(rustc --version | awk '{print $2}')"
+    RA_VER="$(rust-analyzer --version | awk '{print $2}')"
+    row "Rust" "PASS" "rustc $RUST_VER | cargo | rust-analyzer $RA_VER"
+else
+    row "Rust" "WARN" "Missing tools:$RUST_MISSING"
+fi
+
+# 10. Java Toolchain
+if command -v java >/dev/null 2>&1 && command -v mvn >/dev/null 2>&1; then
+    JAVA_VER="$(java -version 2>&1 | head -n 1 | awk -F '\"' '{print $2}')"
+    MVN_VER="$(mvn -version | head -n 1 | awk '{print $3}')"
+    row "Java" "PASS" "OpenJDK $JAVA_VER | Maven $MVN_VER"
+else
+    row "Java" "WARN" "OpenJDK or Maven missing"
+fi
+
+# 11. Cloud & IaC
+IAC_MISSING=""
+for c in tofu ansible helm kubectl; do
+    if ! command -v "$c" >/dev/null 2>&1; then
+        IAC_MISSING="$IAC_MISSING $c"
+    fi
+done
+if [ -z "$IAC_MISSING" ]; then
+    TOFU_VER="$(tofu --version | head -n 1 | awk '{print $2}')"
+    HELM_VER="$(helm version --short | cut -d+ -f1)"
+    row "Cloud & IaC" "PASS" "OpenTofu $TOFU_VER | Ansible | Helm $HELM_VER | kubectl"
+else
+    row "Cloud & IaC" "WARN" "Missing tools:$IAC_MISSING"
+fi
+
+# 12. Git & TUI Suite
+GIT_MISSING=""
+for tui in git gh lazygit lazydocker yazi btop delta; do
+    if ! command -v "$tui" >/dev/null 2>&1; then
+        GIT_MISSING="$GIT_MISSING $tui"
+    fi
+done
+if [ -z "$GIT_MISSING" ]; then
+    GIT_VER="$(git --version | awk '{print $3}')"
+    row "Git & TUIs" "PASS" "git $GIT_VER | lazygit | lazydocker | yazi | btop | delta"
+else
+    row "Git & TUIs" "WARN" "Missing tools:$GIT_MISSING"
+fi
+
+# 13. Security Scanners
+SEC_MISSING=""
 for s in gitleaks trivy bandit pip-audit osv-scanner shellcheck actionlint hadolint; do
-    command -v "$s" >/dev/null 2>&1 || SEC_OK=0
+    if ! command -v "$s" >/dev/null 2>&1; then
+        SEC_MISSING="$SEC_MISSING $s"
+    fi
 done
-if [ "$SEC_OK" -eq 1 ]; then
-    row "Security" "PASS" "gitleaks, trivy, bandit, pip-audit, osv-scanner, shellcheck, actionlint, hadolint"
+if [ -z "$SEC_MISSING" ]; then
+    row "Security Tools" "PASS" "gitleaks, trivy, bandit, pip-audit, osv-scanner, shellcheck, actionlint, hadolint"
 else
-    row "Security" "WARN" "Some security scanners missing"
+    row "Security Tools" "WARN" "Missing tools:$SEC_MISSING"
 fi
 
-# 14b. Academic, HDL, Compilers & Docs
-ACAD_OK=1
+# 14. Academic & HDL
+ACAD_MISSING=""
 for a in iverilog verilator flex bison dot gnuplot typst pandoc protoc mosquitto_pub; do
-    command -v "$a" >/dev/null 2>&1 || ACAD_OK=0
+    if ! command -v "$a" >/dev/null 2>&1; then
+        ACAD_MISSING="$ACAD_MISSING $a"
+    fi
 done
-if [ "$ACAD_OK" -eq 1 ]; then
+if [ -z "$ACAD_MISSING" ]; then
     row "Academic & HDL" "PASS" "iverilog, verilator, flex, bison, graphviz, gnuplot, typst, pandoc, protoc, mqtt"
 else
-    row "Academic & HDL" "WARN" "Some academic/HDL tools missing"
+    row "Academic & HDL" "WARN" "Missing tools:$ACAD_MISSING"
 fi
 
-# 15. Embedded & Rasp32
-ARM_VER="$(arm-none-eabi-gcc --version | head -n 1 | awk '{print $NF}')"
-OCD_VER="$(openocd --version 2>&1 | head -n 1 | awk '{print $4}')"
-ESP_VER="$(esptool version 2>/dev/null | head -n 1 | awk '{print $2}' || echo installed)"
-if ssh -G rasp32 2>/dev/null | grep -q "^hostname 164.41.98.2"; then
-    row "Embedded" "PASS" "arm-none-eabi-gcc $ARM_VER | OpenOCD $OCD_VER | esptool $ESP_VER | Host rasp32 configured"
+# 15. Embedded Systems
+EMB_MISSING=""
+for e in arm-none-eabi-gcc openocd esptool; do
+    if ! command -v "$e" >/dev/null 2>&1; then
+        EMB_MISSING="$EMB_MISSING $e"
+    fi
+done
+if [ -z "$EMB_MISSING" ]; then
+    ARM_VER="$(arm-none-eabi-gcc --version | head -n 1 | awk '{print $NF}')"
+    row "Embedded" "PASS" "arm-none-eabi-gcc $ARM_VER | OpenOCD | esptool"
 else
-    row "Embedded" "WARN" "arm-none-eabi-gcc $ARM_VER | Host rasp32 SSH alias missing"
+    row "Embedded" "WARN" "Missing tools:$EMB_MISSING"
 fi
 
-printf "\n  %sSummary:%s %s%d PASS%s | %s%d WARN%s | %s%d FAIL%s\n\n" \
+printf "\n  %sSummary:%s %s%d PASS%s | %s%d WARN%s | %s%d SKIP%s | %s%d FAIL%s\n\n" \
     "$C_BOLD" "$C_RESET" \
     "$C_GREEN" "$PASS_COUNT" "$C_RESET" \
     "$C_YELLOW" "$WARN_COUNT" "$C_RESET" \
+    "$C_MUTED" "$SKIP_COUNT" "$C_RESET" \
     "$C_RED" "$FAIL_COUNT" "$C_RESET"
+
 [ "$FAIL_COUNT" -eq 0 ]

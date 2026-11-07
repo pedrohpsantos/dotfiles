@@ -1,73 +1,135 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/alpinelinux/alpine-artwork/master/distro/logo.svg" height="80" alt="Alpine Linux Official Logo" />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/logos/exports/154x154_circle.png" height="80" alt="Catppuccin Mocha Logo" />
+<img src="https://raw.githubusercontent.com/alpinelinux/alpine-artwork/master/distro/logo.svg" height="70" alt="Alpine Linux Official Logo" />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/logos/exports/154x154_circle.png" height="70" alt="Catppuccin Mocha Logo" />
 
-# Alpine Linux WSL 2 &bull; Windows 11 Rice
+# Alpine WSL Dotfiles
 
-### *Infraestrutura Declarativa, Engenharia musl e Estética Catppuccin Mocha (2026)*
+### Alpine Linux 3.23 &bull; WSL 2 &bull; Windows 11 Rice
 
 [![CI & Governance](https://img.shields.io/github/actions/workflow/status/pedrohpsantos/dotfiles/ci.yml?branch=main&label=CI%20Pipeline&logo=githubactions&logoColor=white&style=flat-square)](https://github.com/pedrohpsantos/dotfiles/actions/workflows/ci.yml)
 [![Alpine Linux](https://img.shields.io/badge/Alpine_Linux-3.23.8_musl-0D597F?logo=alpinelinux&logoColor=white&style=flat-square)](https://alpinelinux.org/)
 [![WSL 2](https://img.shields.io/badge/WSL_2-Kernel_6.18-0078D4?logo=windows-terminal&logoColor=white&style=flat-square)](https://learn.microsoft.com/windows/wsl/)
 [![Neovim](https://img.shields.io/badge/Neovim-0.11.7_musl-57A143?logo=neovim&logoColor=white&style=flat-square)](https://neovim.io/)
-[![Shell](https://img.shields.io/badge/Zsh_5.9-Starship_%3C25ms-89B4FA?logo=gnu-bash&logoColor=white&style=flat-square)](https://starship.rs/)
-[![Multiplexer](https://img.shields.io/badge/Tmux-3.6_Popups-74C7EC?logo=tmux&logoColor=white&style=flat-square)](https://github.com/tmux/tmux)
-[![GNU Stow](https://img.shields.io/badge/GNU_Stow-2.4.1_Modular-FAB387?logo=gnu&logoColor=white&style=flat-square)](https://www.gnu.org/software/stow/)
 [![Theme](https://img.shields.io/badge/Theme-Catppuccin_Mocha-CBA6F7?logo=visual-studio-code&logoColor=white&style=flat-square)](https://github.com/catppuccin/catppuccin)
 [![License](https://img.shields.io/badge/License-MIT-A6E3A1?style=flat-square)](LICENSE)
 
 <br/>
 
-[Filosofia & Visão Geral](#filosofia--visão-geral) &bull;
-[Métricas de Performance](#métricas-de-performance--latência) &bull;
-[Arquitetura do Subsistema](#arquitetura--topologia-do-subsistema) &bull;
-[Módulos GNU Stow](#estrutura-modular-gnu-stow) &bull;
-[Ergonomia de Teclado & TUIs](#ergonomia-de-teclado--suíte-tui) &bull;
-[Guia de Instalação](#guia-de-instalação-rápida) &bull;
-[Windows 11 Rice](#windows-11-rice--desktop-showcase) &bull;
-[Governança](#governança-ci--qualidade-contínua)
+[Visão Geral](#1-visão-geral) &bull;
+[Ambiente de Referência](#2-ambiente-de-referência) &bull;
+[Instalação Rápida](#3-guia-de-instalação-rápida-quick-start) &bull;
+[O que é Gerenciado](#4-o-que-é-gerenciado) &bull;
+[Arquitetura](#5-arquitetura--topologia-do-subsistema) &bull;
+[Stack e Funcionalidades](#6-stack-e-funcionalidades) &bull;
+[Performance](#7-performance--benchmarks-do-ambiente-de-referência) &bull;
+[Atalhos](#8-ergonomia--atalhos-essenciais) &bull;
+[Windows 11 Rice](#9-windows-11-rice) &bull;
+[Governança e Testes](#10-governança-ci--validação-de-qualidade)
 
 </div>
 
 ---
 
-## Filosofia & Visão Geral
+## 1. Visão Geral
 
-Este repositório estabelece uma **plataforma híbrida de desenvolvimento pessoal**: une a leveza implacável e o determinismo do **Alpine Linux 3.23 (musl libc / BusyBox / OpenRC)** dentro do WSL 2 com a fluidez visual, transparência acrílica e produtividade por tiling do **Windows 11 Host**.
+Este repositório contém a infraestrutura de configuração versionada para uma workstation de desenvolvimento baseada em **Alpine Linux 3.23 no WSL 2**, combinada com gerenciamento declarativo via **GNU Stow**, provisionamento reprodutível de pacotes APK nativos e integração com o desktop **Windows 11**.
 
-A premissa é simples: **eliminar todo o atrito invisível que drena a atenção do desenvolvedor**:
+O projeto prioriza:
+- **Ferramental nativo compilado para musl libc:** Compiladores, Language Servers, formatadores e analisadores Tree-sitter instalados diretamente pelos repositórios oficiais APK do Alpine, sem intermediários de binários `glibc` como o Mason.
+- **Estrutura modular e reversível:** Configurações de usuário organizadas em módulos independentes aplicados por links simbólicos (`stow --no-folding`).
+- **PATH curado e interoperabilidade WSL preservada:** `appendWindowsPath = false` no `/etc/wsl.conf` para evitar a inclusão automática de dezenas de pastas do Windows que degradam o desempenho de I/O no barramento 9P, mantendo a capacidade de execução de binários Windows com wrappers e caminhos explicitamente configurados.
+- **Identidade visual coerente:** Paleta **Catppuccin Mocha** unificada entre Neovim, Tmux, Starship, ferramentas TUI e o desktop Windows 11.
 
-- ![Nativo musl](https://img.shields.io/badge/musl-100%25_Nativo-0D597F?style=flat-square) **Zero gambiarras de compatibilidade:** Banimento absoluto de gerenciadores de binários pré-compilados em `glibc` (como Mason no Neovim). Todos os compiladores, Language Servers (`clangd`, `gopls`, `rust-analyzer`, `ruff`, `lua-language-server`, `taplo`), formatadores (`stylua`, `shfmt`) e analisadores sintáticos Tree-sitter são pacotes nativos mantidos pelos repositórios oficiais do Alpine.
-- ![GNU Stow](https://img.shields.io/badge/Stow-Modular_%26_Atômico-FAB387?style=flat-square) **Gerenciamento Declarativo:** 11 pacotes modulares isolados via **GNU Stow** com flag `--no-folding`, permitindo versionar configurações individuais em `$HOME` sem transformar diretórios compartilhados (`~/.config`, `~/.local/bin`) em symlinks únicos e quebradiços.
-- ![WSL Interop](https://img.shields.io/badge/WSL-Curadoria_de_I%2FO-0078D4?style=flat-square) **Interoperabilidade Cirúrgica:** Com `appendWindowsPath = false` no `/etc/wsl.conf`, eliminamos centenas de chamadas desnecessárias de `stat()` no lento barramento Plan9/9p. Os únicos comandos Windows permitidos entram via allowlist estrita (`clip.exe`, `explorer.exe`, `powershell.exe`, `code`, `agy`).
-- ![GPU CUDA](https://img.shields.io/badge/NVIDIA-CUDA_13.5_Passthrough-76B900?logo=nvidia&logoColor=white&style=flat-square) **Poder de IA & GPU Local:** Integração direta com a GPU dedicada NVIDIA RTX 3050 (6 GB VRAM) através de `/dev/dxg` e `/usr/lib/wsl`, viabilizando fluxos Docker acelerados por hardware e conexão com Ollama host.
-- ![Catppuccin](https://img.shields.io/badge/Estética-Catppuccin_Mocha-CBA6F7?style=flat-square) **Identidade Visual Unificada:** Paleta oficial **Catppuccin Mocha** calibrada com acentos Sapphire (`#74c7ec`), Teal (`#94e2d5`) e Lavender (`#b4befe`) em todas as ferramentas de terminal, painéis TUI e janelas do Windows 11.
-
----
-
-## Métricas de Performance & Latência
-
-Valores reais aferidos no hardware de referência (Intel Core i5-13420H / 16 GB RAM / WSL 2 / Alpine 3.23.8):
-
-<div align="center">
-
-| Métrica | Benchmark Real Auditado | Otimização Aplicada |
-| :--- | :---: | :--- |
-| **Inicialização do Zsh** | **`~22 ms`** | Bytecode compilado (`zcompile`), hooks cacheados (`zcompdump`, `zoxide`, `direnv`) e PATH sem I/O Windows |
-| **Startup do Neovim 0.11** | **`~33 ms`** | Lazy loading (`lazy.nvim`), 18 plugins, zero Mason, `vim.lsp.config` nativo e gramáticas Tree-sitter em `/usr/lib/tree-sitter` |
-| **Renderização do Prompt** | **`< 5 ms`** | Prompt Starship compilado em Rust com inicialização salva em cache (`starship-init.zsh`) |
-| **Devdoctor Diagnostic** | **`19 PASS / 0 WARN / 0 FAIL`** | Verificação de integridade de 100% dos compiladores, LSPs, GPU, Docker, Git, Cloud e ferramentas de segurança |
-| **Dependências glibc no Neovim** | **`0`** | Compilação puramente nativa para `musl libc 1.2.5` |
-
-</div>
+> [!NOTE]
+> Este é um ambiente pessoal configurado para a máquina de trabalho descrita abaixo. Usuários em outras distribuições ou hardwares podem precisar adaptar caminhos nos wrappers de integração com Windows e Docker.
 
 ---
 
-## Arquitetura & Topologia do Subsistema
+## 2. Ambiente de Referência
 
-O ecossistema opera através de uma separação estrita de fronteiras de responsabilidade:
+Hardware e versões verificadas no ambiente principal:
+
+| Componente | Configuração de Referência |
+| :--- | :--- |
+| **Computador / Host** | Acer Nitro V15 (`ANV15-51`) &bull; Intel Core i5-13420H (12 vCPUs) &bull; 16 GB RAM |
+| **GPU Dedicada** | NVIDIA GeForce RTX 3050 Laptop GPU (6 GB VRAM) |
+| **Sistema Host** | Windows 11 Pro (`26300`) &bull; WSL `2.7.14` |
+| **Distribuição Guest** | Alpine Linux `3.23.8` (x86_64) &bull; musl libc `1.2.5` &bull; OpenRC |
+| **Kernel WSL** | `6.18.33.2-microsoft-standard-WSL2` |
+| **Shell & Multiplexador** | Zsh `5.9` &bull; Starship `1.24.2` &bull; Tmux `3.6` |
+| **Editor Principal** | Neovim `0.11.7` (LazyVim Hybrid + LSPs nativos do sistema) |
+| **Gerenciador de Dotfiles**| GNU Stow `2.4.1` &bull; APK Package Manager |
+| **Tema Geral** | Catppuccin Mocha (Acentos Sapphire, Teal e Lavender) |
+
+---
+
+## 3. Guia de Instalação Rápida (Quick Start)
+
+### Pré-requisitos
+1. WSL 2 habilitado no Windows 11 com uma distribuição Alpine Linux instalada (ex: `Alpine-3.23.4`).
+2. Repositório clonado **sempre dentro do sistema de arquivos ext4 nativo do Linux** (`$HOME`), nunca dentro de montagens NTFS em `/mnt/c/`.
+
+### 1. Clonar o repositório
+```sh
+git clone https://github.com/pedrohpsantos/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+```
+
+### 2. Simular a instalação (Dry-Run seguro)
+Valida dependências, inspeciona arquivos conflitantes e simula os links do GNU Stow sem alterar o sistema:
+```sh
+./install.sh --dry-run
+```
+
+### 3. Executar o bootstrap automatizado
+Instala pacotes APK faltantes, cria backup preventivo de eventuais arquivos reais em `$HOME`, aplica os symlinks GNU Stow, compila caches do Zsh (`zcompile`) e valida serviços OpenRC:
+```sh
+./install.sh
+```
+
+### Flags disponíveis no `install.sh`:
+```text
+Opções:
+  --dry-run          Simula todas as etapas e valida conflitos GNU Stow sem alterar nada
+  --with-optional    Instala pacotes opcionais de packages/alpine/optional.txt
+  --skip-packages    Pula a auditoria e instalação de pacotes APK
+  --skip-openrc      Pula a validação e início de serviços OpenRC
+  --skip-doctor      Pula a execução da suíte devdoctor no final
+  --help, -h         Exibe o manual de ajuda
+```
+
+---
+
+## 4. O que é Gerenciado
+
+O repositório contém **11 pacotes GNU Stow** destinados a configurações do usuário aplicadas em `$HOME`. Manifestos APK, arquivos de configuração do sistema WSL, documentação técnica e governança são mantidos em diretórios auxiliares separados:
+
+### Pacotes GNU Stow de Usuário (`stow --no-folding -t "$HOME" <pacote>`)
+| Pacote | Conteúdo Versionado | Destino em `$HOME` |
+| :--- | :--- | :--- |
+| **`zsh`** | `.zshenv`, `.zprofile`, `.zshrc`, `.profile`, `.config/zsh/aliases.zsh` | Configuração principal do shell e PATH curado |
+| **`starship`** | `.config/starship.toml` | Prompt Catppuccin Mocha minimalista com renderização rápida |
+| **`tmux`** | `.config/tmux/tmux.conf` | Prefixo `Ctrl+b`, splits preservando diretório e popups flutuantes em 92% |
+| **`nvim`** | `.config/nvim/{init.lua,lazy-lock.json,lua/**}` | Neovim 0.11 com LazyVim Hybrid e Language Servers nativos musl |
+| **`lazygit`** | `.config/lazygit/config.yml` | Interface TUI para Git com tema Catppuccin Mocha e Delta pager |
+| **`lazydocker`**| `.config/lazydocker/config.yml` | Interface TUI para Docker Engine e Compose v2 |
+| **`yazi`** | `.config/yazi/{yazi.toml,keymap.toml}` | Gerenciador de arquivos assíncrono em terminal com wrapper de *cd-on-exit* |
+| **`btop`** | `.config/btop/{btop.conf,themes/catppuccin_mocha.theme}` | Monitor de recursos do sistema |
+| **`fastfetch`**| `.config/fastfetch/config.jsonc` | Dashboard visual de resumo de hardware e sistema |
+| **`git`** | `.gitconfig`, `.editorconfig`, `.config/git/ignore` | Configuração global do Git, credenciais GH CLI e ignore global |
+| **`local-bin`**| `.local/bin/{devdoctor,workbench,wb,alpine-maint,docker,nvidia-smi,ollama,agy}` | Utilitários de diagnóstico, launchers de workspace e wrappers de interoperabilidade |
+
+### Áreas Auxiliares do Repositório (Não aplicadas via Stow no `$HOME`)
+- **`wsl-system/`:** Configuração `/etc/wsl.conf` aplicada no sistema raiz pelo `install.sh` via `doas`/`sudo`.
+- **`packages/alpine/`:** Manifestos declarativos APK (`base.txt`, `tui.txt`, `dev.txt`, `security.txt`, `optional.txt`).
+- **`docs/`:** Documentação técnica detalhada ([`ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`INSTALLATION.md`](docs/INSTALLATION.md), [`WINDOWS_RICE.md`](docs/WINDOWS_RICE.md)).
+- **`.github/`:** Pipeline de CI ([`ci.yml`](.github/workflows/ci.yml)), templates de Pull Request e Issues.
+
+---
+
+## 5. Arquitetura & Topologia do Subsistema
 
 ```mermaid
 flowchart TD
@@ -75,15 +137,15 @@ flowchart TD
         WT["WezTerm / Windows Terminal\n(Backdrop Acrylic · JetBrainsMono Nerd Font)"]
         WM["GlazeWM v3 + Zebar + Flow Launcher\n(Tiling Window Manager · Catppuccin Mocha)"]
         VSC["VS Code (Remote-WSL) / Antigravity CLI"]
-        GPU["NVIDIA GeForce RTX 3050 (Driver 621.14)\nDocker Desktop + Ollama Host"]
+        GPU["NVIDIA GeForce RTX 3050\nDocker Desktop + Ollama Host"]
     end
 
-    subgraph Guest[" Alpine Linux 3.23.8 WSL 2 (musl · OpenRC · ext4) "]
+    subgraph Guest[" Alpine Linux 3.23 WSL 2 (musl · OpenRC · ext4) "]
         Boot["/etc/wsl.conf\n(boot.command = /sbin/openrc default · appendWindowsPath = false)"]
-        RC["OpenRC Daemons\n(syslogd PID ativo · crond PID ativo · redis desabilitado no boot)"]
-        Stow["~/dotfiles (GNU Stow Repository)"]
-        Shell["Zsh 5.9 + Starship Prompt\n(Cache zcompdump · Hooks em ~/.cache/zsh)"]
-        Nvim["Neovim 0.11.7 LazyVim Hybrid\n(Native musl LSP · vim.lsp.config · Tree-sitter .so)"]
+        RC["Serviços OpenRC\n(syslogd e crond no boot · redis fora dos runlevels de boot)"]
+        Stow["~/dotfiles (11 Pacotes GNU Stow)"]
+        Shell["Zsh 5.9 + Starship Prompt\n(Caches zcompdump · Hooks em ~/.cache/zsh)"]
+        Nvim["Neovim 0.11.7 LazyVim Hybrid\n(LSPs nativos APK · vim.lsp.config · Tree-sitter .so)"]
         TUIs["Suíte TUI\n(LazyGit · LazyDocker · Yazi · Btop · Fastfetch)"]
         Bins["~/.local/bin\n(devdoctor · workbench · docker GPU wrapper · agy wrapper)"]
     end
@@ -100,162 +162,143 @@ flowchart TD
 
 ---
 
-## Estrutura Modular GNU Stow
+## 6. Stack e Funcionalidades
 
-Cada pasta raiz do repositório é um **pacote GNU Stow autônomo**, espelhando fielmente os caminhos relativos ao `$HOME` do usuário:
+### Toolchains & Linguagens de Programação
+- **Compiladores & Runtimes:** GCC (`build-base`), Clang 21, Go 1.25, Rust 1.91 (Cargo/Clippy), Python 3.12 (`uv`), Node.js 24 (`pnpm`), OpenJDK 21 (`maven`).
+- **Language Servers (Nativos musl instalados via APK):**
+  - C/C++: `clangd` (via pacote `clang21-extra-tools`)
+  - Go: `gopls`
+  - Rust: `rust-analyzer`
+  - Lua: `lua-language-server`
+  - TOML: `taplo`
+- **Linters e Formatadores de Código:**
+  - Python: `ruff` (executado como formatador e linter via `conform.nvim`)
+  - Lua: `stylua`
+  - Shell / Zsh: `shfmt` e `shellcheck`
+  - C/C++: `clang-format`
+  - Go / Rust: `gofmt` e `rustfmt`
+- **Editor & Parsing:** Neovim 0.11 configurado sob arquitetura LazyVim Hybrid (18 plugins essenciais, `vim.lsp.config` nativo e gramáticas Tree-sitter `.so` carregadas de `/usr/lib/tree-sitter/`).
 
-```text
-dotfiles/
-├── .github/                          # Governança: CI Workflow, Issue Templates e PR Template
-│   ├── workflows/ci.yml              # Pipeline automatizado (POSIX sh, ShellCheck, Zsh, Gitleaks, Stow)
-│   ├── PULL_REQUEST_TEMPLATE.md      # Checklist e modelo padronizado de Pull Requests
-│   └── ISSUE_TEMPLATE/               # Formulários estruturados para Bug Report e Feature Requests
-│
-├── packages/alpine/                  # Manifestos declarativos de pacotes APK (Alpine v3.23)
-│   ├── base.txt                      # Shell, editor, multiplexador, git, stow, doas, ca-certificates
-│   ├── tui.txt                       # lazygit, lazydocker, yazi, btop, fastfetch, fzf, fd, rg, eza, bat, delta
-│   ├── dev.txt                       # clang21, gopls, rust-analyzer, ruff, lua-ls, stylua, shfmt, taplo
-│   ├── security.txt                  # actionlint, osv-scanner, shellcheck, gnupg
-│   └── optional.txt                  # opentofu, ansible, helm, iverilog, verilator, typst, gcc-arm-none-eabi
-│
-├── zsh/                              # ~/.zshenv, ~/.zprofile, ~/.zshrc, ~/.profile, ~/.config/zsh/aliases.zsh
-├── starship/                         # ~/.config/starship.toml (Prompt cápsula Catppuccin Mocha)
-├── tmux/                             # ~/.config/tmux/tmux.conf (Splits, prefixo Ctrl+b, popups flutuantes em 92%)
-├── nvim/                             # ~/.config/nvim/{init.lua,lazy-lock.json,lua/{config,plugins}/*.lua}
-├── lazygit/                          # ~/.config/lazygit/config.yml (Delta pager + Catppuccin Mocha)
-├── lazydocker/                       # ~/.config/lazydocker/config.yml (Docker Compose v2 + bat pager)
-├── yazi/                             # ~/.config/yazi/{yazi.toml,keymap.toml} (Navegação TUI assíncrona)
-├── btop/                             # ~/.config/btop/{btop.conf,themes/catppuccin_mocha.theme}
-├── fastfetch/                        # ~/.config/fastfetch/config.jsonc (Dashboard visual do sistema)
-├── git/                              # ~/.gitconfig, ~/.editorconfig, ~/.config/git/ignore
-├── local-bin/                        # ~/.local/bin/{devdoctor,workbench,wb,alpine-maint,docker,nvidia-smi,ollama,agy}
-│
-├── wsl-system/
-│   └── wsl.conf                      # Configuração do sistema (/etc/wsl.conf: OpenRC boot + interop seguro)
-│
-├── docs/                             # Documentação técnica aprofundada
-│   ├── ARCHITECTURE.md               # Decisões de engenharia, modelo em 4 camadas e governança
-│   ├── INSTALLATION.md               # Manual de provisionamento, flags e rollback seguro
-│   └── WINDOWS_RICE.md               # Guia Windows 11 Rice (WezTerm, GlazeWM v3, Zebar, Flow Launcher)
-│
-├── install.sh                        # Script de bootstrap POSIX idempotente (--dry-run testado)
-├── Makefile                          # Automação local: make check, make lint, make test, make doctor
-├── CONTRIBUTING.md                   # Normas para adição de pacotes e padrões de código
-├── SECURITY.md                       # Diretrizes de segurança e escaneamento de segredos
-├── CHANGELOG.md                      # Histórico de versões (Padrão Keep a Changelog)
-└── LICENSE                           # Licença MIT
-```
+### Shell, Multiplexador & TUIs
+- **Zsh 5.9:** Otimizado com autocompilação de bytecode (`zcompile`) em `~/.zshenv`, `~/.zprofile` e `~/.zshrc`.
+- **Hooks cacheados:** Geração única e carregamento assíncrono para `zoxide`, `direnv` e `compinit` em `~/.cache/zsh/`.
+- **Tmux 3.6:** Atalhos ergonômicos e suporte a janelas flutuantes em popups centralizados a 92% da tela para ferramentas TUI.
+- **Suíte TUI:** `lazygit`, `lazydocker`, `yazi` (com wrapper `y` para cd-on-exit), `btop`, `fastfetch` e visualizador de diff `delta`.
+
+### Interoperabilidade WSL e Aceleração GPU
+- **PATH Controlado:** `appendWindowsPath = false` impede a importação indiscriminada de centenas de executáveis do Windows para o `$PATH` do Linux.
+- **Execução Preservada:** `interop.enabled = true` mantém o registro `/proc/sys/fs/binfmt_misc/WSLInterop` ativo. Os comandos essenciais do Windows são acessados por caminhos curados ou wrappers em `~/.local/bin/`:
+  - `clip.exe` (via alias `pbcopy` ou cópia no Tmux)
+  - `explorer.exe` (via alias `open`)
+  - `powershell.exe` (via alias `pbpaste`)
+  - `code` (script bash do VS Code Remote)
+  - `agy` (wrapper `~/.local/bin/agy` apontando para o executável `agy.exe` do Antigravity CLI)
+- **Integração GPU no WSL 2:** O wrapper `~/.local/bin/docker` intercepta a flag `--gpus=all` no comando `docker run` e injeta automaticamente os dispositivos `/dev/dxg` e volumes `/usr/lib/wsl`, permitindo executar containers Linux `glibc` com suporte a CUDA sem necessidade de alterar o ambiente musl do Alpine.
 
 ---
 
-## Ergonomia de Teclado & Suíte TUI
+## 7. Performance — Benchmarks do Ambiente de Referência
 
-### 1. Multiplexador Tmux 3.6 (`Prefixo: Ctrl+b`)
+Os números abaixo representam medições reais documentadas no hardware de referência:
 
-| Atalho | Ação | Descrição |
-| :--- | :--- | :--- |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>\|</kbd> | Split Horizontal | Divide o painel horizontalmente preservando o diretório de trabalho atual |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>-</kbd> | Split Vertical | Divide o painel verticalmente preservando o diretório de trabalho atual |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>g</kbd> | Popup LazyGit | Abre o **LazyGit** flutuante em janela centralizada a 92% da tela |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>d</kbd> | Popup LazyDocker | Abre o **LazyDocker** flutuante em popup centralizado a 92% |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>y</kbd> | Popup Yazi | Abre o gerenciador de arquivos **Yazi** em popup flutuante |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>b</kbd> | Popup Btop | Abre o monitor de recursos **Btop** em popup flutuante |
-| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>[</kbd> | Copy Mode Vi | Navegação e cópia com teclas Vi; integração com `clip.exe` no <kbd>y</kbd> |
+| Métrica | Resultado Medido | Metodologia & Condições de Teste |
+| :--- | :---: | :--- |
+| **Inicialização do Zsh** | **`~22 ms`** | Medido com laço de 10 execuções não-interativas: `time (repeat 10 zsh -i -c exit)`. Caches `.zwc` compilados e `appendWindowsPath = false`. |
+| **Startup do Neovim 0.11** | **`~33 ms`** | Medido com `nvim --startuptime /tmp/nvim-bench.log +qa`. 18 plugins carregados via `lazy.nvim`, zero Mason, LSPs ativados via `vim.lsp.config`. |
+| **Renderização do Starship** | **`< 5 ms`** | Binário nativo compilado em Rust com módulo de prompt inicializado a partir de cache local (`~/.cache/zsh/starship-init.zsh`). |
+| **Painel Diagnóstico devdoctor** | **`18 PASS / 0 WARN / 2 SKIP / 0 FAIL`** | Execução de verificação de presença e integridade de binários (`~/.local/bin/devdoctor`). Nota: 2 testes marcam `SKIP` por demandarem execução funcional de containers GPU pesados. |
 
-### 2. Neovim 0.11.7 LazyVim Hybrid (`Leader: Space`)
+---
 
+## 8. Ergonomia & Atalhos Essenciais
+
+### Multiplexador Tmux 3.6 (`Prefixo: Ctrl+b`)
+| Atalho | Ação |
+| :--- | :--- |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>\|</kbd> | Split horizontal mantendo o diretório atual |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>-</kbd> | Split vertical mantendo o diretório atual |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>g</kbd> | Abre o **LazyGit** flutuante em popup centralizado (92%) |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>d</kbd> | Abre o **LazyDocker** flutuante em popup (92%) |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>y</kbd> | Abre o gerenciador **Yazi** flutuante em popup |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>b</kbd> | Abre o monitor **Btop** flutuante em popup |
+| <kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>[</kbd> | Modo de cópia Vi (navegação com `hjkl`, seleção com `v`, cópia com `y` para `clip.exe`) |
+
+### Neovim 0.11.7 (`Leader: Space`)
 | Atalho | Modo | Função |
 | :--- | :---: | :--- |
 | <kbd>Space</kbd> <kbd>Space</kbd> / <kbd>Space</kbd> <kbd>f</kbd><kbd>f</kbd> | Normal | Localizar arquivos no projeto (`telescope.nvim`) |
-| <kbd>Space</kbd> <kbd>/</kbd> / <kbd>Space</kbd> <kbd>f</kbd><kbd>g</kbd> | Normal | Busca textual global em tempo real (`live_grep` com Ripgrep) |
-| <kbd>Space</kbd> <kbd>e</kbd> | Normal | Alternar explorador de arquivos em colunas Miller (`mini.files`) |
-| <kbd>Space</kbd> <kbd>g</kbd><kbd>g</kbd> | Normal | Abrir **LazyGit** flutuante sobre o arquivo atual (`Snacks.lazygit`) |
-| <kbd>Space</kbd> <kbd>d</kbd><kbd>d</kbd> | Normal | Abrir **LazyDocker** flutuante integrado ao Neovim |
-| <kbd>g</kbd><kbd>d</kbd> / <kbd>g</kbd><kbd>r</kbd> / <kbd>K</kbd> | Normal | Go to Definition / References / Hover Documentation (`vim.lsp.config`) |
+| <kbd>Space</kbd> <kbd>/</kbd> / <kbd>Space</kbd> <kbd>f</kbd><kbd>g</kbd> | Normal | Busca textual global (`live_grep` via Ripgrep) |
+| <kbd>Space</kbd> <kbd>e</kbd> | Normal | Alternar explorador em colunas Miller (`mini.files`) |
+| <kbd>Space</kbd> <kbd>g</kbd><kbd>g</kbd> | Normal | LazyGit flutuante integrado ao Neovim (`Snacks.lazygit`) |
+| <kbd>Space</kbd> <kbd>d</kbd><kbd>d</kbd> | Normal | LazyDocker flutuante integrado |
+| <kbd>g</kbd><kbd>d</kbd> / <kbd>g</kbd><kbd>r</kbd> / <kbd>K</kbd> | Normal | Ir para Definição / Referências / Hover Documentation (`vim.lsp.config`) |
 | <kbd>Space</kbd> <kbd>c</kbd><kbd>f</kbd> / <kbd>Space</kbd> <kbd>f</kbd> | Normal/Visual | Formatar buffer com `conform.nvim` (`stylua`, `ruff`, `gofmt`, `rustfmt`, `shfmt`) |
 | <kbd>Space</kbd> <kbd>u</kbd><kbd>h</kbd> | Normal | Alternar Inlay Hints do LSP sob demanda |
-| <kbd>Space</kbd> <kbd>x</kbd><kbd>x</kbd> | Normal | Painel de diagnósticos estruturados do workspace (`trouble.nvim` v3) |
+| <kbd>Space</kbd> <kbd>x</kbd><kbd>x</kbd> | Normal | Painel de diagnósticos estruturados (`trouble.nvim` v3) |
 
-### 3. Utilitários do Shell (Zsh)
-
+### Utilitários do Shell
 | Comando | Descrição |
 | :--- | :--- |
-| `wb` / `workbench [categoria]` | Seletor de workspace interativo (`fzf` + preview `eza`) que inicia sessão Tmux de 3 janelas (`code`, `run`, `ops`) |
-| `y` | Inicia o **Yazi** com *cd-on-exit*: ao sair com <kbd>q</kbd>, o shell entra na pasta selecionada; com <kbd>Q</kbd>, permanece no diretório anterior |
-| `devdoctor` | Executa o dashboard de diagnóstico com 19 verificações de integridade do ambiente |
-| `alpine-maint` | Auditoria rápida read-only de pacotes APK, processos OpenRC, portas, caches e integridade Git |
+| `wb` / `workbench [categoria]` | Seletor de workspace (`fzf` + preview `eza`) que cria sessão Tmux estruturada (`code`, `run`, `ops`) |
+| `y` | Abre o Yazi com mudança de pasta ao sair: <kbd>q</kbd> muda para o diretório navegado; <kbd>Q</kbd> cancela |
+| `devdoctor` | Executa o painel de diagnóstico de presença e integridade de compiladores, LSPs e ferramentas |
+| `alpine-maint` | Auditoria read-only rápida de serviços OpenRC, pacotes APK e repositório Git |
 | `dotfiles` | Atalho para gerenciar o repositório (`git -C ~/dotfiles`) |
 
 ---
 
-## Guia de Instalação Rápida
+## 9. Windows 11 Rice
 
-> [!IMPORTANT]
-> Clone o repositório sempre no sistema de arquivos nativo Linux (`$HOME`), nunca dentro de `/mnt/c/`.
-
-```sh
-# 1. Clonar o repositório
-git clone https://github.com/pedrohpsantos/dotfiles.git ~/dotfiles
-cd ~/dotfiles
-
-# 2. Simular a instalação (Dry-Run seguro sem alterações no sistema)
-./install.sh --dry-run
-
-# 3. Executar o bootstrap automatizado
-./install.sh
-```
-
-### Flags Disponíveis no Bootstrap:
-
-```text
-Opções:
-  --dry-run          Simula todas as etapas e valida conflitos GNU Stow sem alterar nada
-  --with-optional    Instala pacotes opcionais de packages/alpine/optional.txt
-  --skip-packages    Pula a auditoria e instalação de pacotes APK
-  --skip-openrc      Pula a validação e início de serviços OpenRC
-  --skip-doctor      Pula a execução da suíte devdoctor no final
-  --help, -h         Exibe o manual de ajuda
-```
-
----
-
-## Windows 11 Rice & Desktop Showcase
-
-O guia completo para transformar o visual do seu **Windows 11 Host** e integrá-lo perfeitamente com o ecossistema do Alpine Linux está documentado em:
+O guia detalhado para configurar as ferramentas visuais do **Windows 11 Host** e manter a mesma identidade estética do terminal Alpine está disponível em:
 
 👉 **[`docs/WINDOWS_RICE.md`](docs/WINDOWS_RICE.md)**
 
-Ele disponibiliza configurações prontas para copiar e colar:
-- **WezTerm:** Configuração `%USERPROFILE%\.wezterm.lua` com Acrylic blur, fontes Nerd Font e inicialização direta no Alpine.
-- **GlazeWM v3:** Tiling Window Manager em `%USERPROFILE%\.glzr\glazewm\config.yaml` com atalhos i3/bspwm e gaps configurados.
-- **Zebar:** Barra de status flutuante `%USERPROFILE%\.glzr\zebar\` com monitoramento de CPU, memória, bateria e workspaces.
-- **Flow Launcher:** Tema oficial Catppuccin Mocha para busca rápida de aplicativos e produtividade.
-- **`.wslconfig`:** Tunings de memória (10 GB), processadores (12 vCPUs), Sparse VHD, Memory Reclaim gradual e DNS tunneling.
+Configurações abordadas no documento:
+- **WezTerm:** Configuração `%USERPROFILE%\.wezterm.lua` com transparência acrílica (Acrylic blur), fonte `JetBrainsMono Nerd Font` e inicialização direta no Alpine.
+- **GlazeWM v3:** Tiling Window Manager em `%USERPROFILE%\.glzr\glazewm\config.yaml` com atalhos de janelas e divisão automática de tela.
+- **Zebar:** Barra de status flutuante `%USERPROFILE%\.glzr\zebar\` com indicadores de uso de CPU, memória, bateria e workspaces.
+- **Flow Launcher:** Tema oficial Catppuccin Mocha para pesquisa rápida de janelas e utilitários.
+- **`.wslconfig`:** Parâmetros de ajuste de memória (10 GB), processadores (12 vCPUs), Sparse VHD, Memory Reclaim gradual e DNS tunneling no `%USERPROFILE%\.wslconfig`.
 
 ---
 
-## Governança, CI & Qualidade Contínua
+## 10. Governança, CI & Validação de Qualidade
 
-Este repositório adota ferramentas e padrões de governança rigorosos:
-
+### Automação Local com Makefile
 ```sh
-make help      # Exibe os comandos de qualidade disponíveis
+make help      # Exibe os comandos disponíveis
 make check     # Executa todos os linters e o teste dry-run do Stow
-make lint      # Executa sh -n, shellcheck e zsh -n arquivo por arquivo
-make dry-run   # Simula o bootstrap completo
-make doctor    # Executa a suíte de diagnósticos devdoctor (19 PASS)
+make lint      # Executa validação de sintaxe (sh -n, shellcheck, zsh -n arquivo por arquivo)
+make dry-run   # Executa o ./install.sh --dry-run
+make doctor    # Executa a suíte de diagnósticos devdoctor
+make clean     # Remove arquivos de cache compilados (.zwc)
 ```
 
-- **CI Automatizado no GitHub Actions:** Pipeline [`.github/workflows/ci.yml`](.github/workflows/ci.yml) valida sintaxe POSIX (`sh -n`), ShellCheck com nível de severidade `style`, sintaxe Zsh (`zsh -n`), formatação, escaneamento de segredos via Gitleaks e simulação GNU Stow a cada Push e PR.
-- **Prevenção de Credenciais:** Escaneamento ativo com Gitleaks e regras rígidas no [`.gitignore`](.gitignore).
-- **Restauração Defensiva:** Procedimento seguro documentado em [`docs/INSTALLATION.md`](docs/INSTALLATION.md) com validações de caminho, diff seletivo restrito ao snapshot e remoção prévia de symlinks do Stow antes da cópia.
+### Pipeline de CI no GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+A cada Push e Pull Request contra a branch `main`, o pipeline automatizado executa:
+- Validação estrita de sintaxe POSIX (`sh -n install.sh`, `sh -n zsh/.profile` e `find local-bin/.local/bin -type f -exec sh -n {} \;`).
+- ShellCheck em nível `style` em todos os scripts do repositório.
+- Validação sintática arquivo por arquivo do Zsh com laço explícito de `zsh -n`.
+- Escaneamento preventivo de credenciais via **Gitleaks**.
+- Simulação de aplicação de todos os 11 pacotes GNU Stow.
+
+### Restauração Segura de Backups
+O script `install.sh` gera automaticamente um snapshot `~/.dotfiles_backup_YYYYMMDD_HHMMSS` ao encontrar arquivos reais antes de criar os links simbólicos. O procedimento de restauração documentado em [`docs/INSTALLATION.md`](docs/INSTALLATION.md) inclui validação estrita de diretório, diff prévio seletivo restrito ao snapshot e remoção de symlinks (`stow --delete`) antes de qualquer restauração de arquivos originais.
 
 ---
 
-## Licença & Créditos
+## 11. Documentação Complementar & Licença
+
+- [**Arquitetura & Decisões Técnicas:** `docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [**Guia de Instalação e Rollback:** `docs/INSTALLATION.md`](docs/INSTALLATION.md)
+- [**Guia de Personalização do Windows:** `docs/WINDOWS_RICE.md`](docs/WINDOWS_RICE.md)
+- [**Guia de Contribuição:** `CONTRIBUTING.md`](CONTRIBUTING.md)
+- [**Política de Segurança:** `SECURITY.md`](SECURITY.md)
+- [**Histórico de Mudanças:** `CHANGELOG.md`](CHANGELOG.md)
 
 Distribuído sob a licença **MIT**. Consulte [`LICENSE`](LICENSE) para mais detalhes.
 
 <div align="center">
-Desenvolvido com obsessão por performance por <b>Pedro Henrique Santos</b> &bull; 2026
+Desenvolvido por <b>Pedro Henrique Santos</b> &bull; 2026
 </div>
