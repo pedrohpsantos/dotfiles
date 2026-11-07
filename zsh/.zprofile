@@ -27,11 +27,8 @@ path=(
     /usr/lib/wsl/lib
     "/mnt/c/WINDOWS/system32"
     "/mnt/c/WINDOWS"
-    "/mnt/c/WINDOWS/System32/Wbem"
     "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0"
-    "/mnt/c/Users/pedrohpsantos/AppData/Local/Microsoft/WindowsApps"
     "/mnt/c/Users/pedrohpsantos/AppData/Local/Programs/Microsoft VS Code/bin"
-    "/mnt/c/Users/pedrohpsantos/.gemini/antigravity-cli/bin"
     "/mnt/c/Users/pedrohpsantos/AppData/Local/agy/bin"
 )
 

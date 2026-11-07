@@ -80,8 +80,8 @@ alias open='explorer.exe'
 alias pbcopy='clip.exe'
 alias pbpaste='powershell.exe -NoProfile -Command Get-Clipboard | tr -d "\r"'
 
-# --- Dotfiles Bare Repo Manager ---
-alias dotfiles='git --git-dir="$HOME/.dotfiles" --work-tree="$HOME"'
+# --- Dotfiles Repository Manager ---
+alias dotfiles='git -C "${DOTFILES_DIR:-$HOME/dotfiles}"'
 
 # --- Helper Functions ---
 mkcd() {

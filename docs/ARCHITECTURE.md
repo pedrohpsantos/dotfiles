@@ -64,6 +64,8 @@ Gerenciadas pelo GNU Stow com `--no-folding --target="$HOME"`. O uso de `--no-fo
 ### 3.2. Configurações de Sistema (`wsl-system/wsl.conf`)
 O arquivo `wsl-system/wsl.conf` corresponde a `/etc/wsl.conf`.
 - **Regra Crítica:** Nunca execute `stow -t "$HOME" wsl-system`.
+- **Inicialização OpenRC:** Configurado com `[boot] command = "/sbin/openrc default"` e `systemd = false`. No boot da instância WSL 2, o init do WSL executa `/sbin/openrc default` como root, inicializando o runlevel padrão e disparando `syslog` e `crond` de forma persistente.
+- **Interoperabilidade Segura:** Configurado com `[interop] enabled = true` e `appendWindowsPath = false`. Isso mantém `/proc/sys/fs/binfmt_misc/WSLInterop` ativo para rodar executáveis `.exe`, mas impede que o WSL injete dezenas de pastas do Windows no PATH Linux. O acesso aos comandos Windows necessários (`clip.exe`, `explorer.exe`, `powershell.exe`, `code`, `agy`) é garantido pela allowlist estrita em `~/.zshenv` e wrappers em `~/.local/bin/`.
 - O `install.sh` compara `wsl-system/wsl.conf` com `/etc/wsl.conf` usando `cmp -s`. Somente se houver divergência, ele cria um backup `/etc/wsl.conf.bak.<timestamp>` e aplica o arquivo com `doas`/`sudo`.
 
 ### 3.3. Configurações do Windows Host (`docs/WINDOWS_RICE.md`)
@@ -75,8 +77,13 @@ Arquivos como `%USERPROFILE%\.wslconfig`, `%USERPROFILE%\.wezterm.lua`, `%USERPR
 
 1. **Proibição de Mason no Neovim:** O `mason.nvim` baixa binários pré-compilados para `glibc` que falham ou exigem gambiarras no Alpine. Em vez disso, `nvim/.config/nvim/lua/config/lsp.lua` utiliza a API nativa `vim.lsp.config` do Neovim 0.11 conectada aos binários `musl` do APK (`clangd`, `gopls`, `rust-analyzer`, `ruff`, `lua-language-server`, `taplo`).
 2. **Tree-sitter Nativo (`/usr/lib/tree-sitter`):** As gramáticas `.so` são providas pelo pacote `tree-sitter-grammars` do Alpine e carregadas sob demanda via `vim.treesitter.start`.
-3. **Curadoria de `PATH` WSL 2:** Em vez de importar dezenas de diretórios do Windows via `/mnt/c` (que degradam a latência de `stat()` no barramento Plan9/9p), `.zshenv` e `.zprofile` definem uma allowlist enxuta contendo apenas os caminhos Linux e as pontes essenciais do Windows (`system32`, `WindowsPowerShell`, `VS Code`, `Antigravity`).
+3. **Curadoria de `PATH` WSL 2:** Com `appendWindowsPath = false` em `/etc/wsl.conf`, `.zshenv` e `.zprofile` definem uma allowlist enxuta contendo apenas os caminhos Linux essenciais e as pontes estritas do Windows (`system32`, `WINDOWS`, `WindowsPowerShell`, `VS Code`, `agy`). Isso elimina a latência de I/O em chamadas `stat()` no barramento 9P/Plan9.
 4. **GPU CUDA em Containers `glibc`:** O wrapper `local-bin/.local/bin/docker` intercepta `--gpus=all` em `docker run` / `docker container run` e injeta `--device=/dev/dxg -v /usr/lib/wsl:/usr/lib/wsl:ro` com `LD_LIBRARY_PATH` configurado, permitindo treinar e rodar cargas PyTorch/CUDA em containers a partir do Alpine.
+5. **Modelo de Reprodutibilidade em 4 Camadas:**
+   - **Camada 1 (APK Essencial):** `packages/alpine/{base,tui,dev,security}.txt` gerenciados pelo `apk` nativo do Alpine (`main` + `community`).
+   - **Camada 2 (APK Opcional):** `packages/alpine/optional.txt` provisionados sob demanda via `./install.sh --with-optional`.
+   - **Camada 3 (Ferramentas Python via uv):** Utilitários CLI isolados via `uv tool install <pkg>` (`bandit`, `pip-audit`, `esptool`).
+   - **Camada 4 (Binários Estáticos de Releases Oficiais):** `gitleaks`, `trivy`, `hadolint` em `~/.local/bin/` baixados de releases oficiais com validação de hash, sem versionar binários ELF no repositório Git.
 
 ---
 
@@ -84,3 +91,23 @@ Arquivos como `%USERPROFILE%\.wslconfig`, `%USERPROFILE%\.wezterm.lua`, `%USERPR
 
 1. **Idempotência Real:** Na primeira execução sobre arquivos regulares, `install.sh` move cada arquivo conflitante para `~/.dotfiles_backup_YYYYMMDD_HHMMSS/<caminho-relativo>`, valida a cópia com `cmp -s` e aplica os symlinks do Stow. Nas execuções seguintes, `resolve_stow_conflicts` detecta que todos os links já apontam para o repositório e **não cria diretórios de backup vazios ou redundantes**.
 2. **Fluxo de Edição Contínua:** Como os arquivos em `$HOME` são symlinks diretos para `~/dotfiles/<pacote>/...`, qualquer ajuste feito em `~/.config/nvim/init.lua` ou `~/.zshrc` reflete imediatamente no `git status` de `~/dotfiles`.
+
+---
+
+## 6. Procedimento de Teste de Reinicialização (Host Windows)
+
+Para validar a persistência da inicialização do OpenRC após alterar `/etc/wsl.conf`:
+
+```powershell
+# No PowerShell do Windows 11 Host:
+# 1. Encerrar a instância Alpine WSL 2
+wsl.exe --terminate Alpine-3.23.4
+
+# 2. Reabrir o shell da distribuição
+wsl.exe -d Alpine-3.23.4
+
+# 3. No shell do Alpine, verificar se os daemons foram iniciados pelo boot.command:
+rc-status
+pgrep -a syslogd
+pgrep -a crond
+```

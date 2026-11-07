@@ -65,11 +65,15 @@ run_status() {
         fi
     done
 
-    sec "7. Integridade do Repositorio ~/.dotfiles"
-    if [ -d "$HOME/.dotfiles" ]; then
-        git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" status -sb | sed 's/^/  /'
+    sec "7. Integridade do Repositorio Dotfiles"
+    _dotfiles_dir="${DOTFILES_DIR:-$HOME/dotfiles}"
+    if [ -d "$_dotfiles_dir/.git" ] || git -C "$_dotfiles_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        printf "  [OK]   Repositorio em %s\n" "$_dotfiles_dir"
+        git -C "$_dotfiles_dir" status -sb 2>/dev/null | sed 's/^/  /' || printf "  [WARN] Falha ao consultar status do git em %s\n" "$_dotfiles_dir"
+    elif [ -d "$_dotfiles_dir" ]; then
+        printf "  [WARN] %s existe, mas nao e um repositorio Git valido\n" "$_dotfiles_dir"
     else
-        printf "  [WARN] ~/.dotfiles nao encontrado\n"
+        printf "  [WARN] Repositorio dotfiles nao encontrado em %s\n" "$_dotfiles_dir"
     fi
 
     sec "8. Backups Integrais WSL no Windows"
