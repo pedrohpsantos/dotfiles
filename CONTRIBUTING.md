@@ -29,16 +29,19 @@ Para manter a consistência, segurança e altíssima performance do ambiente, to
 Antes de enviar qualquer commit ou abrir um Pull Request:
 
 ```sh
-# 1. Validar sintaxe POSIX sh
+# 1. Validar sintaxe POSIX sh (arquivo por arquivo)
 sh -n install.sh
-find local-bin/.local/bin -type f -exec sh -n {} +
+sh -n zsh/.profile
+find local-bin/.local/bin -type f -exec sh -n {} \;
 
 # 2. Executar ShellCheck com nível de severidade 'style'
 shellcheck install.sh
 shellcheck -S style local-bin/.local/bin/*
 
-# 3. Validar sintaxe do Zsh
-zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.zlogin zsh/.config/zsh/aliases.zsh
+# 3. Validar sintaxe do Zsh (arquivo por arquivo)
+for file in zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.config/zsh/aliases.zsh; do
+  zsh -n "$file" || exit 1
+done
 
 # 4. Executar simulação de conflitos do GNU Stow
 stow --simulate --restow --no-folding --target="$HOME" \

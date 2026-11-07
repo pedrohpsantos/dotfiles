@@ -17,6 +17,8 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 - Modelo de reprodutibilidade em 4 camadas documentado em `docs/ARCHITECTURE.md`.
 
 ### Fixed
+- Cobertura estrita de sintaxe no CI e Makefile: corrigido `find -exec sh -n {} \;` e loop individual `zsh -n` para validação real de 100% dos arquivos; incluído `zsh/.profile` e removida referência ao `.zlogin` inexistente.
+- Renderização visual do README: substituídos glifos Nerd Font incompatíveis com navegadores web por logotipos SVG oficiais do Alpine Linux e Catppuccin Mocha.
 - Inicialização do OpenRC no WSL 2: ativado `[boot] command = "/sbin/openrc default"` em `wsl-system/wsl.conf` e `/etc/wsl.conf`.
 - Modo `--dry-run` do `install.sh`: agora executa a simulação real `stow --simulate --restow --no-folding` e roda a suíte de diagnósticos em modo somente-leitura.
 - Diagnóstico de repositório no `alpine-maint`: corrigido para consultar `DOTFILES_DIR` em `~/dotfiles` via `git -C`.

@@ -15,12 +15,13 @@ check: lint test ## Executa todos os linters, verificações estáticas e testes
 lint: ## Valida sintaxe POSIX, ShellCheck e arquivos Zsh
 	@printf "\033[1;34m==> Validando sintaxe POSIX (sh -n)...\033[0m\n"
 	sh -n install.sh
-	find local-bin/.local/bin -type f -exec sh -n {} +
+	sh -n zsh/.profile
+	find local-bin/.local/bin -type f -exec sh -n {} \;
 	@printf "\033[1;34m==> Executando ShellCheck...\033[0m\n"
 	shellcheck install.sh
 	shellcheck -S style local-bin/.local/bin/*
-	@printf "\033[1;34m==> Validando sintaxe Zsh...\033[0m\n"
-	zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.zlogin zsh/.config/zsh/aliases.zsh
+	@printf "\033[1;34m==> Validando sintaxe Zsh (arquivo por arquivo)...\033[0m\n"
+	for file in zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.config/zsh/aliases.zsh; do zsh -n "$$file" || exit 1; done
 	@printf "\033[1;32m[OK] Todos os linters passaram sem erros ou avisos.\033[0m\n"
 
 test: dry-run ## Executa simulação do bootstrap e conflitos do Stow
