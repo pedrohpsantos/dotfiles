@@ -459,7 +459,7 @@ compile_zsh_configs() {
         if [ "$DRY_RUN" -eq 1 ]; then
             log_dry "zsh -c 'zcompile \"$_zfile\"'"
         else
-            if [ ! -f "${_zfile}.zwc" ] || [ "$_zfile" -nt "${_zfile}.zwc" ]; then
+            if [ ! -f "${_zfile}.zwc" ] || [ -n "$(find "$_zfile" -newer "${_zfile}.zwc" 2>/dev/null)" ]; then
                 zsh -c "zcompile '$_zfile'"
                 log_info "Compiled ${_zfile}.zwc"
             else
