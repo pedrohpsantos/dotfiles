@@ -187,7 +187,7 @@ flowchart TD
 - **Suíte TUI:** `lazygit`, `lazydocker`, `yazi` (com wrapper `y` para cd-on-exit), `btop`, `fastfetch` e visualizador de diff `delta`.
 
 ### Interoperabilidade WSL e Aceleração GPU
-- **PATH Controlado:** `appendWindowsPath = false` impede a importação indiscriminada de centenas de executáveis do Windows para o `$PATH` do Linux.
+- **PATH Controlado:** `appendWindowsPath = false` impede a inclusão automática dos diretórios presentes no PATH do Windows no PATH do Linux.
 - **Execução Preservada:** `interop.enabled = true` mantém o registro `/proc/sys/fs/binfmt_misc/WSLInterop` ativo. Os comandos essenciais do Windows são acessados por caminhos curados ou wrappers em `~/.local/bin/`:
   - `clip.exe` (via alias `pbcopy` ou cópia no Tmux)
   - `explorer.exe` (via alias `open`)
@@ -204,10 +204,10 @@ Os números abaixo representam medições reais documentadas no hardware de refe
 
 | Métrica | Resultado Medido | Metodologia & Condições de Teste |
 | :--- | :---: | :--- |
-| **Inicialização do Zsh** | **`~22 ms`** | Medido com laço de 10 execuções não-interativas: `time (repeat 10 zsh -i -c exit)`. Caches `.zwc` compilados e `appendWindowsPath = false`. |
-| **Startup do Neovim 0.11** | **`~33 ms`** | Medido com `nvim --startuptime /tmp/nvim-bench.log +qa`. 18 plugins carregados via `lazy.nvim`, zero Mason, LSPs ativados via `vim.lsp.config`. |
-| **Renderização do Starship** | **`< 5 ms`** | Binário nativo compilado em Rust com módulo de prompt inicializado a partir de cache local (`~/.cache/zsh/starship-init.zsh`). |
-| **Painel Diagnóstico devdoctor** | **`18 PASS / 0 WARN / 2 SKIP / 0 FAIL`** | Execução de verificação de presença e integridade de binários (`~/.local/bin/devdoctor`). Nota: 2 testes marcam `SKIP` por demandarem execução funcional de containers GPU pesados. |
+| **Inicialização do Zsh** | **`~22 ms`** | Média aritmética obtida dividindo por 10 o tempo total medido em laço de 10 execuções interativas: `time (repeat 10 zsh -i -c exit)`. Condições: bytecode compilado (`.zwc`), cache de integração Starship (`~/.cache/zsh/starship-init.zsh`) e `appendWindowsPath = false`. |
+| **Startup do Neovim 0.11** | **`~33 ms`** | Medido com `nvim --startuptime /tmp/nvim-bench.log +qa` em buffer vazio e cache de disco aquecido (warm cache). O valor final é extraído da última linha do log de inicialização (`tail -n 1`), correspondente ao tempo total decorrido até prontidão e saída. LazyVim Hybrid com 18 plugins essenciais, zero Mason e LSPs nativos `musl`. |
+| **Overhead do Starship Prompt** | **`< 5 ms`** | O arquivo `~/.cache/zsh/starship-init.zsh` armazena o script de integração com o Zsh (`starship init zsh`), eliminando a execução de subprocessos no startup do shell. A latência de execução dos módulos ativos do prompt em si foi avaliada via `starship timings`, mantendo overhead inferior a 5 ms. |
+| **Painel Diagnóstico devdoctor** | **`18 PASS / 0 WARN / 2 SKIP / 0 FAIL`** | Verificação estática e de integridade das ferramentas da workstation (`~/.local/bin/devdoctor`). Nota: 2 verificações marcam `SKIP` por exigirem execução funcional de containers GPU pesados (`glibc`). |
 
 ---
 

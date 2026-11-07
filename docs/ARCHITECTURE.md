@@ -38,7 +38,7 @@ flowchart TD
 
 ## 2. Organização dos Pacotes GNU Stow
 
-Cada diretório de primeiro nível representa um **pacote Stow autônomo** cuja estrutura interna espelha exatamente o caminho relativo a `$HOME` (`/home/pedrohpsantos`):
+As configurações de usuário são organizadas em **11 pacotes GNU Stow modulares** cuja estrutura interna espelha exatamente os caminhos relativos ao `$HOME` do usuário (`/home/pedrohpsantos`). Diretórios de infraestrutura, documentação e governança (`docs/`, `packages/`, `.github/`, `wsl-system/`) são áreas auxiliares do repositório, não constituem pacotes Stow e não devem ser vinculados ao `$HOME`:
 
 | Pacote Stow | Caminho no Repositório | Destino em `$HOME` | Descrição |
 | :--- | :--- | :--- | :--- |
@@ -80,10 +80,13 @@ Arquivos como `%USERPROFILE%\.wslconfig`, `%USERPROFILE%\.wezterm.lua`, `%USERPR
 3. **Curadoria de `PATH` WSL 2:** Com `appendWindowsPath = false` em `/etc/wsl.conf`, `.zshenv` e `.zprofile` definem uma lista enxuta contendo apenas os caminhos Linux essenciais e as pontes necessárias do Windows (`system32`, `WINDOWS`, `WindowsPowerShell`, `VS Code`, `agy`). Isso elimina a latência de I/O em chamadas `stat()` no barramento 9P/Plan9 sem desabilitar a interoperabilidade de execução.
 4. **GPU CUDA em Containers `glibc`:** O wrapper `local-bin/.local/bin/docker` intercepta `--gpus=all` em `docker run` / `docker container run` e injeta `--device=/dev/dxg -v /usr/lib/wsl:/usr/lib/wsl:ro` com `LD_LIBRARY_PATH` configurado, permitindo treinar e rodar cargas PyTorch/CUDA em containers a partir do Alpine.
 5. **Modelo de Reprodutibilidade em 4 Camadas:**
-   - **Camada 1 (APK Essencial):** `packages/alpine/{base,tui,dev,security}.txt` gerenciados pelo `apk` nativo do Alpine (`main` + `community`).
+   - **Camada 1 (APK Essencial):** `packages/alpine/{base,tui,dev,security}.txt` instalados pelo `apk` nativo do Alpine (`main` + `community`).
    - **Camada 2 (APK Opcional):** `packages/alpine/optional.txt` provisionados sob demanda via `./install.sh --with-optional`.
    - **Camada 3 (Ferramentas Python via uv):** Utilitários CLI isolados via `uv tool install <pkg>` (`bandit`, `pip-audit`, `esptool`).
    - **Camada 4 (Binários Estáticos de Releases Oficiais):** `gitleaks`, `trivy`, `hadolint` em `~/.local/bin/` baixados de releases oficiais com validação de hash, sem versionar binários ELF no repositório Git.
+
+> [!NOTE]
+> O script `install.sh` audita a presença dos utilitários das Camadas 3 e 4 (`gitleaks`, `trivy`, `hadolint`, `bandit`, `pip-audit`, `esptool`) e emite avisos (`WARN`) informativos caso algum não esteja disponível no `PATH`. O bootstrap **não instala essas ferramentas externas automaticamente**, pois o provisionamento de binários estáticos ou ferramentas Python via `uv tool` é uma etapa separada de conveniência do desenvolvedor.
 
 ---
 

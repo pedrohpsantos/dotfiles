@@ -91,8 +91,13 @@ fi
 
 # 4. GPU & CUDA Subsystem (Separated detection vs functional validation)
 if [ -e /dev/dxg ] && command -v nvidia-smi >/dev/null 2>&1; then
-    GPU_SUMMARY="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null | head -n 1 || echo "NVIDIA GPU")"
-    row "GPU Detected" "PASS" "$GPU_SUMMARY (/dev/dxg present)"
+    if GPU_SUMMARY="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null)" && \
+       [ -n "$GPU_SUMMARY" ]; then
+        GPU_SUMMARY="$(printf '%s\n' "$GPU_SUMMARY" | sed -n '1p')"
+        row "GPU Detected" "PASS" "$GPU_SUMMARY (/dev/dxg present)"
+    else
+        row "GPU Detected" "WARN" "nvidia-smi failed to query GPU (/dev/dxg present)"
+    fi
 else
     row "GPU Detected" "WARN" "/dev/dxg device or nvidia-smi command unavailable"
 fi
