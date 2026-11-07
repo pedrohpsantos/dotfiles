@@ -30,8 +30,10 @@ jobs:
         run: |
           echo "==> Verifying install.sh syntax"
           sh -n install.sh
-          echo "==> Verifying ~/.local/bin scripts syntax"
-          find local-bin/.local/bin -type f -exec sh -n {} +
+          echo "==> Verifying zsh/.profile POSIX fallback"
+          sh -n zsh/.profile
+          echo "==> Verifying ~/.local/bin scripts syntax (each file individually)"
+          find local-bin/.local/bin -type f -exec sh -n {} \;
 
       - name: Run ShellCheck on Bootstrap & Scripts
         run: |
@@ -42,8 +44,11 @@ jobs:
 
       - name: Validate Zsh Configurations (zsh -n)
         run: |
-          echo "==> Running zsh -n on Zsh configs"
-          zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.zlogin zsh/.config/zsh/aliases.zsh
+          echo "==> Running zsh -n on each Zsh file individually"
+          for file in zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/.config/zsh/aliases.zsh; do
+            echo "Checking: $file"
+            zsh -n "$file" || exit 1
+          done
 
       - name: Verify Git Whitespace & Trailing Errors
         run: |
