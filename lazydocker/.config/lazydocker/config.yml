@@ -1,0 +1,78 @@
+# ============================================================================
+# ~/.config/lazydocker/config.yml — Catppuccin Mocha + Alpine/Sh Shell Actions
+# ============================================================================
+gui:
+  scrollHeight: 2
+  language: "auto"
+  border: "rounded"
+  theme:
+    activeBorderColor:
+      - "#89b4fa"
+      - bold
+    inactiveBorderColor:
+      - "#45475a"
+    selectedLineBgColor:
+      - "#313244"
+    optionsTextColor:
+      - "#89b4fa"
+  returnImmediately: true
+  wrapMainPanel: true
+  sidePanelWidth: 0.30
+  showBottomLine: true
+  expandFocusedSidePanel: true
+  screenMode: "normal"
+  containerStatusHealthStyle: "icon"
+
+logs:
+  timestamps: false
+  since: "60m"
+  tail: "200"
+
+commandTemplates:
+  dockerCompose: "docker compose"
+  restartService: "{{ .DockerCompose }} restart {{ .Service.Name }}"
+  up: "{{ .DockerCompose }} up -d"
+  down: "{{ .DockerCompose }} down"
+  downWithVolumes: "{{ .DockerCompose }} down --volumes"
+  upService: "{{ .DockerCompose }} up -d {{ .Service.Name }}"
+  startService: "{{ .DockerCompose }} start {{ .Service.Name }}"
+  stopService: "{{ .DockerCompose }} stop {{ .Service.Name }}"
+  serviceLogs: "{{ .DockerCompose }} logs --since=60m --follow {{ .Service.Name }}"
+  viewServiceLogs: "{{ .DockerCompose }} logs --follow {{ .Service.Name }}"
+  rebuildService: "{{ .DockerCompose }} up -d --build {{ .Service.Name }}"
+  recreateService: "{{ .DockerCompose }} up -d --force-recreate {{ .Service.Name }}"
+  allLogs: "{{ .DockerCompose }} logs --tail=300 --follow"
+  viewAlLogs: "{{ .DockerCompose }} logs"
+  dockerComposeConfig: "{{ .DockerCompose }} config"
+  checkDockerComposeConfig: "{{ .DockerCompose }} config --quiet"
+  serviceTop: "{{ .DockerCompose }} top {{ .Service.Name }}"
+
+customCommands:
+  containers:
+    - name: "shell (sh / bash fallback)"
+      attach: true
+      command: "docker exec -it {{ .Container.ID }} sh -c 'if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi'"
+      serviceNames: []
+    - name: "inspect JSON (jq + bat)"
+      attach: true
+      command: "docker inspect {{ .Container.ID }} | bat --language=json --paging=always"
+      serviceNames: []
+    - name: "top processes"
+      attach: true
+      command: "docker top {{ .Container.ID }}"
+      serviceNames: []
+
+oS:
+  openCommand: "explorer.exe {{filename}}"
+  openLinkCommand: "cmd.exe /c start {{link}}"
+
+stats:
+  graphs:
+    - caption: "CPU (%)"
+      statPath: "DerivedStats.CPUPercentage"
+      color: "cyan"
+    - caption: "Memory (%)"
+      statPath: "DerivedStats.MemoryPercentage"
+      color: "magenta"
+
+reporting: "off"

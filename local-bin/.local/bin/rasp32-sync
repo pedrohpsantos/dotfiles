@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+if [ $# -lt 1 ]; then
+    echo "Uso: rasp32-sync <diretorio_local> [destino_remoto_em_rasp32]" >&2
+    exit 1
+fi
+_src="$1"
+_dst="${2:-~/$(basename "$_src")}"
+exec rsync -avz --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude 'node_modules' "$_src" "rasp32:$_dst"

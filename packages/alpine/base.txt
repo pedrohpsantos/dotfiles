@@ -1,0 +1,25 @@
+# ==============================================================================
+# packages/alpine/base.txt — Core Shell, Editor, Multiplexer & Dotfiles Manager
+# Repositories: Alpine Linux v3.23 (main + community)
+# ==============================================================================
+git
+git-lfs
+github-cli
+zsh
+zsh-autosuggestions
+zsh-completions
+zsh-syntax-highlighting
+starship
+tmux
+neovim
+stow
+curl
+wget
+jq
+yq-go
+unzip
+zip
+tar
+ca-certificates
+doas
+busybox-openrc

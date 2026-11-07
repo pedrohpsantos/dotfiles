@@ -1,0 +1,6 @@
+#!/bin/sh
+if [ -x /mnt/c/Windows/System32/nvidia-smi.exe ]; then
+    /mnt/c/Windows/System32/nvidia-smi.exe "$@" | tr -d '\r'
+else
+    exec /usr/lib/wsl/lib/nvidia-smi "$@"
+fi

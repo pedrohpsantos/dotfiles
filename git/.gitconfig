@@ -1,0 +1,43 @@
+[user]
+	name = pedrohpsantos
+	email = phps2014.phps@gmail.com
+[init]
+	defaultBranch = main
+[core]
+	editor = nvim
+	autocrlf = input
+	pager = delta
+	excludesfile = /home/pedrohpsantos/.config/git/ignore
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+	line-numbers = true
+	side-by-side = false
+[merge]
+	conflictstyle = zdiff3
+[diff]
+	colorMoved = default
+[pull]
+	ff = only
+[fetch]
+	prune = true
+[rerere]
+	enabled = true
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+[alias]
+	st = status -sb
+	lg = log --oneline --graph --decorate -n 25
+	last = log -1 HEAD --stat
+	unstage = restore --staged
+	amend = commit --amend --no-edit
+[credential "https://github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential

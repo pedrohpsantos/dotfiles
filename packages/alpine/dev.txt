@@ -1,0 +1,39 @@
+# ==============================================================================
+# packages/alpine/dev.txt — Native musl Compilers, LSPs, Formatters & Tree-sitter
+# Repositories: Alpine Linux v3.23 (main + community)
+# Note: Alpine 3.23 provides clang-extra-tools via clang21-extra-tools.
+# ==============================================================================
+build-base
+clang21
+clang21-extra-tools
+lld21
+cmake
+meson
+samurai
+gdb
+valgrind
+python3-dev
+py3-pip
+uv
+ruff
+go
+gopls
+delve
+rust
+cargo
+rust-analyzer
+rust-clippy
+rustfmt
+nodejs
+npm
+pnpm
+openjdk21-jdk
+maven
+lua-language-server
+stylua
+shfmt
+taplo
+yamllint
+tree-sitter
+tree-sitter-cli
+tree-sitter-grammars

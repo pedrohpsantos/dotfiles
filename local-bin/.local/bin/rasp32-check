@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+exec ssh -o BatchMode=yes -o ConnectTimeout=8 "${1:-rasp32}" \
+    'printf "SSH_KEY_AUTH_OK\n"; id; hostname; uptime'

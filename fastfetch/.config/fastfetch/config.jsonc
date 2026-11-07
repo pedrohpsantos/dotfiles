@@ -1,0 +1,81 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "source": "alpine",
+    "padding": {
+      "top": 1,
+      "left": 2,
+      "right": 3
+    },
+    "color": {
+      "1": "#74c7ec",
+      "2": "#94e2d5"
+    }
+  },
+  "display": {
+    "separator": "   ",
+    "color": {
+      "keys": "#74c7ec",
+      "title": "#94e2d5",
+      "separator": "#585b70"
+    }
+  },
+  "modules": [
+    "title",
+    "separator",
+    {
+      "type": "os",
+      "key": " OS      "
+    },
+    {
+      "type": "host",
+      "key": "💻 Host    "
+    },
+    {
+      "type": "kernel",
+      "key": " Kernel  "
+    },
+    {
+      "type": "uptime",
+      "key": " Uptime  "
+    },
+    {
+      "type": "packages",
+      "key": "󰏖 Packages"
+    },
+    {
+      "type": "shell",
+      "key": " Shell   "
+    },
+    {
+      "type": "terminal",
+      "key": " Terminal"
+    },
+    {
+      "type": "wm",
+      "key": " WM/WSL  "
+    },
+    {
+      "type": "cpu",
+      "key": " CPU     "
+    },
+    {
+      "type": "gpu",
+      "key": "󰢮 GPU     "
+    },
+    {
+      "type": "memory",
+      "key": " Memory  "
+    },
+    {
+      "type": "disk",
+      "key": " Disk (/)",
+      "folders": "/"
+    },
+    "break",
+    {
+      "type": "colors",
+      "symbol": "circle"
+    }
+  ]
+}

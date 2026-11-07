@@ -1,0 +1,70 @@
+#!/bin/sh
+# ==============================================================================
+# ~/.local/bin/docker — WSL 2 Docker Desktop CLI Wrapper with DirectX/WSL GPU Hook
+# Translates --gpus=all / --gpus all on `docker run` or `docker container run`
+# to WSL2 /dev/dxg + /usr/lib/wsl passthrough while preserving all other commands.
+# ==============================================================================
+REAL_DOCKER="/mnt/wsl/docker-desktop/cli-tools/usr/bin/docker"
+
+IS_RUN=0
+SUBCMD_PREFIX=""
+if [ "${1:-}" = "run" ]; then
+    IS_RUN=1
+    SUBCMD_PREFIX="run"
+    shift
+elif [ "${1:-}" = "container" ] && [ "${2:-}" = "run" ]; then
+    IS_RUN=1
+    SUBCMD_PREFIX="container run"
+    shift 2
+fi
+
+if [ "$IS_RUN" -eq 1 ]; then
+    NEEDS_WSL_GPU=0
+    SKIP_NEXT=0
+    for arg in "$@"; do
+        if [ "$SKIP_NEXT" -eq 1 ]; then
+            SKIP_NEXT=0
+            continue
+        fi
+        case "$arg" in
+            --gpus=*)
+                NEEDS_WSL_GPU=1
+                ;;
+            --gpus)
+                NEEDS_WSL_GPU=1
+                SKIP_NEXT=1
+                ;;
+        esac
+    done
+
+    if [ "$NEEDS_WSL_GPU" -eq 1 ] && [ -e /dev/dxg ] && [ -d /usr/lib/wsl ]; then
+        set -- "$@" --_sentinel_
+        while [ "$1" != "--_sentinel_" ]; do
+            arg="$1"
+            shift
+            case "$arg" in
+                --gpus=*)
+                    ;;
+                --gpus)
+                    shift
+                    ;;
+                *)
+                    set -- "$@" "$arg"
+                    ;;
+            esac
+        done
+        shift # remove sentinel
+        # shellcheck disable=SC2086
+        exec "$REAL_DOCKER" $SUBCMD_PREFIX \
+            --device=/dev/dxg \
+            -v /usr/lib/wsl:/usr/lib/wsl:ro \
+            -e LD_LIBRARY_PATH="/usr/lib/wsl/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64" \
+            -e PATH="/usr/lib/wsl/lib:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+            "$@"
+    fi
+    # Restore prefix if no GPU flag was passed
+    # shellcheck disable=SC2086
+    exec "$REAL_DOCKER" $SUBCMD_PREFIX "$@"
+fi
+
+exec "$REAL_DOCKER" "$@"
