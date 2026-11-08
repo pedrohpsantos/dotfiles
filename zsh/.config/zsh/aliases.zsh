@@ -140,6 +140,7 @@ rasp32-copy() {
 }
 
 # --- Workstation 2026 Modern TUI & Workbench Shortcuts ---
+alias ff='fastfetch'
 alias ld='lazydocker'
 alias btm='btop'
 alias wb='workbench'

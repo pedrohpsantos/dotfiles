@@ -27,12 +27,12 @@ O script [`Invoke-WorkstationMaintenance.ps1`](../windows/scripts/Invoke-Worksta
 | Módulo | Escopo de Limpeza / Diagnóstico | Benefício para o Notebook |
 | :--- | :--- | :--- |
 | **1. Telemetria & Bateria** | Leitura de hardware, espaço C: e relatório XML de bateria (`powercfg`) | Exibe capacidade de projeto, capacidade atual de carga total, ciclos e índice de saúde da bateria. |
-| **2. Temporários & Dumps** | `%LOCALAPPDATA%\Temp`, `CrashDumps`, relatórios WER e Lixeira | Remove gigabytes de instaladores e arquivos temporários com mais de 12 horas, ignorando arquivos em uso. |
-| **3. Shaders & Gaming** | DirectX (`D3DSCache`), NVIDIA (`DXCache`, `GLCache`) e Miniaturas | Força a recriação limpa de pipelines gráficos, eliminando stutters e quedas de FPS em jogos. |
-| **4. Caches Dev** | `npm-cache`, `pip\cache`, `cargo\registry\cache`, `winget` e VS Code | Recupera tipicamente entre 4 GB e 8 GB de pacotes compilados e tarballs redundantes. |
+| **2. Temporários & Dumps** | Temp de usuário, detecção de navegadores ativos (`WinOpt`), relatórios WER, Delivery Optimization e Lixeira | Remove instaladores inativos (>12h) e limpa cache de entrega P2P sem corromper arquivos em uso. |
+| **3. Shaders & Gaming** | DirectX (`D3DSCache`), NVIDIA (`DXCache`, `GLCache`), miniaturas e Game Mode (`winutil`) | Força recriação limpa de pipelines de shaders e garante priorização de GPU e P-cores pelo Windows 11. |
+| **4. Caches Dev** | `npm-cache` (purga rápida via Robocopy Mirror - `LimpezaAvançada`), `pip`, `cargo`, `winget` e VS Code | Recupera entre 4 GB e 8 GB de pacotes compilados e tarballs redundantes com velocidade otimizada. |
 | **5. WSL 2 & Docker VHDX** | Varredura e cálculo de tamanho de discos virtuais `.vhdx` | Monitora o crescimento de `docker_data.vhdx` e `ext4.vhdx`, alertando quando a compactação é recomendada. |
-| **6. Rede & DNS** | `ipconfig /flushdns` e redefinição de tabela ARP | Elimina instabilidades de conexão ao alternar entre o Wi-Fi da faculdade, trabalho e residência. |
-| **7. SO & NVMe (Admin)** | `DISM StartComponentCleanup`, WinUpdate Cache e NVMe ReTrim | Expulsa backups antigos da pasta `WinSxS` e envia comandos TRIM ao SSD para manter taxas máximas de I/O. |
+| **6. Rede & Latência** | Flush de DNS, reset de ARP e `NetworkThrottlingIndex = 0xffffffff` (`winutil`) | Elimina quedas em Wi-Fi e desativa o estrangulamento de pacotes não-multimídia durante jogos. |
+| **7. SO & NVMe (Admin)** | WinUpdate (com pausa segura de serviços - `WinOpt`), Event Logs (`wevtutil`), DISM, SFC e NVMe ReTrim | Expulsa logs acumulados, otimiza a pasta `WinSxS`, audita integridade de DLLs e envia comando TRIM. |
 | **8. Auditoria de Startup** | Mapeamento de chaves de registro `Run` (HKCU / HKLM) | Identifica apps pesados (ex: Docker Desktop) que inicializam com o Windows e drenam a bateria. |
 | **9. Resumo Executivo** | Cálculo de delta de espaço livre antes vs. depois | Apresenta relatório consolidado com o total de bytes liberados e recomendações técnicas. |
 
@@ -107,3 +107,26 @@ Recomendada uma vez por mês com o notebook conectado à tomada:
   # 5. Sair do diskpart
   exit
   ```
+
+---
+
+## 5. Benchmarking & Síntese dos Repositórios de Otimização
+
+Analisamos quatro dos principais projetos de manutenção e otimização do ecossistema Windows:
+
+1. **`filippobrundia/WinOpt`**:
+   - *Adotado:* Detecção antecipada de navegadores ativos (`chrome`, `msedge`, `firefox`, etc.) antes da limpeza para alertar sobre arquivos travados; purga do cache de Otimização de Entrega (`DeliveryOptimization\Cache`); pausa e reinício gracioso dos serviços `wuauserv`, `bits` e `dosvc` para liberar arquivos de atualização travados.
+   - *Descartado:* Desativação permanente de telemetria via hosts ou bloqueio destrutivo de serviços essenciais.
+
+2. **`ChrisTitusTech/winutil`**:
+   - *Adotado:* Otimização de latência multimídia de rede no registro (`NetworkThrottlingIndex = 0xffffffff` e `SystemResponsiveness = 10`), prevenindo gargalos em jogos de alta performance; verificação proativa do Windows Game Mode (`AllowAutoGameMode = 1`).
+   - *Descartado:* Remoção agressiva de componentes do sistema que quebram o WSL 2 e desativação do Windows Defender.
+
+3. **`edgardocorrea/LimpezaAvancada`**:
+   - *Adotado:* Técnica de purga ultrarrápida via `robocopy /MIR` espelhando um diretório vazio para pastas de cache massivas (`npm-cache`), contornando a latência de I/O por arquivo da API NTFS.
+   - *Descartado:* Limpeza cega de processos em execução sem tratamento de exceção.
+
+4. **`AlexandreAlan/script-windows-desempenho`**:
+   - *Adotado:* Purga de logs acumulados no Visualizador de Eventos via `wevtutil cl` (essencial para estações com Docker e WSL 2 com muitas reinicializações); auditoria não-destrutiva de integridade via `sfc /verifyonly`.
+   - *Descartado:* Desativação de paginação do kernel e scripts batch sem tipagem nem modo simulação.
+

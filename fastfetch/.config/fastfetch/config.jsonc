@@ -1,15 +1,15 @@
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
-    "source": "alpine",
+    "source": "/home/pedrohpsantos/.config/fastfetch/alpine_logo.txt",
     "padding": {
       "top": 1,
-      "left": 2,
+      "left": 1,
       "right": 3
     },
     "color": {
       "1": "#74c7ec",
-      "2": "#94e2d5"
+      "2": "#89b4fa"
     }
   },
   "display": {
@@ -29,7 +29,7 @@
     },
     {
       "type": "host",
-      "key": "💻 Host    "
+      "key": "󰌢 Host    "
     },
     {
       "type": "kernel",
@@ -69,7 +69,7 @@
     },
     {
       "type": "disk",
-      "key": " Disk (/)",
+      "key": "󰋊 Disk (/)",
       "folders": "/"
     },
     "break",

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./docs/assets/alpine-logo.svg" height="70" alt="Alpine Linux Official Logo" />
+<img src="docs/assets/alpine-logo.svg" height="70" alt="Alpine Linux Official Logo" />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img src="./docs/assets/catppuccin-logo.png" height="70" alt="Catppuccin Mocha Logo" />
+<img src="docs/assets/catppuccin-logo.png" height="70" alt="Catppuccin Mocha Logo" />
 
 # Alpine WSL Dotfiles
 
