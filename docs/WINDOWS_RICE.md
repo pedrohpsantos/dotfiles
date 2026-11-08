@@ -939,7 +939,18 @@ Aguarde 8 segundos (regra de desligamento da VM utilitária do WSL 2) e inicie n
    ```sh
    cat /etc/resolv.conf
    ```
-5. **Verificar Sparse VHD (no PowerShell 7 do Windows):**
-   ```powershell
-   wsl.exe --manage Alpine-3.23.4 --set-sparse true
-   ```
+
+---
+
+## 9. Manutenção Mensal & Otimização de Performance (`sysclean`)
+
+Para manter o Windows 11 com baixa latência de DPC, caches de shaders NVIDIA limpos e discos virtuais enxutos sem comprometer a autonomia da bateria na faculdade/trabalho, utilize o script automatizado:
+
+- **Documentação Detalhada:** [`docs/WINDOWS_MAINTENANCE.md`](WINDOWS_MAINTENANCE.md)
+- **Script PowerShell:** [`windows/scripts/Invoke-WorkstationMaintenance.ps1`](../windows/scripts/Invoke-WorkstationMaintenance.ps1)
+- **Comando Rápido no Terminal:**
+  ```powershell
+  sysclean           # Execução padrão mensal de usuário
+  sysclean -DryRun   # Simulação sem exclusão
+  sysclean -DeepClean # Manutenção profunda (DISM WinSxS, NVMe TRIM e Docker prune)
+  ```
